@@ -22,22 +22,30 @@ import {
 
 const COLORS = ['#3273dc', '#48c774', '#ffdd57', '#f14668', '#b86bff', '#7a7d85']
 
-const buildPieLabel = ({ name, value }) => `${name}: ${value}`
+const buildPieLabel = (entry) => {
+  if (entry.subjectBreakdown) {
+    return `${entry.name}: ${entry.value}`
+  }
+  return `${entry.name}: ${entry.value}`
+}
 
 const StudentPerformanceAnalytics = () => {
+  const [school, setSchool] = useState('')
   const [grade, setGrade] = useState('')
-  const [identifier, setIdentifier] = useState('')
-  const [mode, setMode] = useState('subject')
+  const [studentId, setStudentId] = useState('')
+  const [studentName, setStudentName] = useState('')
+  const [subjectId, setSubjectId] = useState('')
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const [schools, setSchools] = useState([])
   const [grades, setGrades] = useState([])
   const [subjects, setSubjects] = useState([])
   const [students, setStudents] = useState([])
   const [loadingOptions, setLoadingOptions] = useState(true)
 
-  const backendUrl = 'http://127.0.0.1:5000'
+  const backendUrl = 'http://127.0.0.1:5001'
 
   const fetchAnalytics = async () => {
     setLoading(true)
@@ -45,8 +53,11 @@ const StudentPerformanceAnalytics = () => {
     setAnalytics(null)
 
     try {
-      const params = new URLSearchParams({ type: mode })
-      const url = `${backendUrl}/SPA/${grade}/past_performance/${encodeURIComponent(identifier)}?${params}`
+      const params = new URLSearchParams({ type: 'student' })
+      if (subjectId) {
+        params.append('subject', subjectId)
+      }
+      const url = `${backendUrl}/SPA/${school}/${grade}/past_performance/${encodeURIComponent(studentId)}?${params}`
       const response = await fetch(url)
       if (!response.ok) {
         const err = await response.json()
@@ -61,54 +72,111 @@ const StudentPerformanceAnalytics = () => {
     }
   }
 
+  // Fetch schools on component mount
   useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const schoolsRes = await fetch(`${backendUrl}/schools`)
+
+        if (!schoolsRes.ok) {
+          throw new Error('Failed to load schools')
+        }
+
+        const schoolsData = await schoolsRes.json()
+        setSchools(schoolsData)
+
+        // Set default school
+        if (schoolsData.length > 0) {
+          setSchool(schoolsData[0])
+          setGrade('GRD001')
+          setStudentId('')
+          setStudentName('')
+          setSubjectId('')
+        }
+        setLoadingOptions(false)
+      } catch (err) {
+        setError('Failed to load schools: ' + err.message)
+        setLoadingOptions(false)
+      }
+    }
+
+    fetchSchools()
+  }, [])
+
+  // Fetch grades and subjects when school changes
+  useEffect(() => {
+    if (!school) return
+
     const fetchOptions = async () => {
       try {
-        const [gradesRes, subjectsRes, studentsRes] = await Promise.all([
-          fetch(`${backendUrl}/grades`),
-          fetch(`${backendUrl}/subjects`),
-          fetch(`${backendUrl}/students`)
+        setLoadingOptions(true)
+        const [gradesRes, subjectsRes] = await Promise.all([
+          fetch(`${backendUrl}/grades/${school}`),
+          fetch(`${backendUrl}/subjects/${school}`)
         ])
 
-        if (!gradesRes.ok || !subjectsRes.ok || !studentsRes.ok) {
-          throw new Error('Failed to load options')
+        if (!gradesRes.ok || !subjectsRes.ok) {
+          throw new Error('Failed to load options for selected school')
         }
 
         const gradesData = await gradesRes.json()
         const subjectsData = await subjectsRes.json()
-        const studentsData = await studentsRes.json()
 
         setGrades(gradesData)
         setSubjects(subjectsData)
-        setStudents(studentsData)
 
-        // Set defaults
-        if (gradesData.length > 0) setGrade(gradesData[0])
-        if (subjectsData.length > 0) setIdentifier(subjectsData[0].id)
+        // Set default grade to GRD001
+        setGrade('GRD001')
+        setStudentId('')
+        setStudentName('')
+        setSubjectId('')
       } catch (err) {
-        setError('Failed to load dropdown options: ' + err.message)
+        setError('Failed to load options: ' + err.message)
       } finally {
         setLoadingOptions(false)
       }
     }
 
     fetchOptions()
-  }, [])
+  }, [school])
 
+  // Fetch students when grade changes
   useEffect(() => {
-    // Update identifier when mode changes
-    if (mode === 'subject' && subjects.length > 0) {
-      setIdentifier(subjects[0].id)
-    } else if (mode === 'student' && students.length > 0) {
-      setIdentifier(students[0].id)
+    if (!school || !grade) return
+
+    const fetchStudents = async () => {
+      try {
+        setLoadingOptions(true)
+        const studentsRes = await fetch(`${backendUrl}/students/${school}/${grade}`)
+
+        if (!studentsRes.ok) {
+          throw new Error('Failed to load students for selected grade')
+        }
+
+        const studentsData = await studentsRes.json()
+        setStudents(studentsData)
+
+        // Set default student and subject
+        if (studentsData.length > 0) {
+          setStudentId(studentsData[0].id)
+          setStudentName(studentsData[0].name)
+        }
+        setSubjectId('')
+      } catch (err) {
+        setError('Failed to load students: ' + err.message)
+      } finally {
+        setLoadingOptions(false)
+      }
     }
-  }, [mode, subjects, students])
+
+    fetchStudents()
+  }, [school, grade])
 
   useEffect(() => {
-    if (grade && identifier && !loadingOptions) {
+    if (school && grade && studentId && !loadingOptions) {
       fetchAnalytics()
     }
-  }, [grade, identifier, mode, loadingOptions])
+  }, [school, grade, studentId, subjectId, loadingOptions])
 
   const handleRefresh = (event) => {
     event.preventDefault()
@@ -129,9 +197,20 @@ const StudentPerformanceAnalytics = () => {
           <form onSubmit={handleRefresh} className="box">
             <div className="columns is-multiline">
               <div className="column is-3">
+                <label className="label">School</label>
+                <div className="select is-fullwidth">
+                  <select value={school} onChange={(e) => setSchool(e.target.value)} disabled={loadingOptions}>
+                    {schools.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="column is-3">
                 <label className="label">Grade</label>
                 <div className="select is-fullwidth">
-                  <select value={grade} onChange={(e) => setGrade(e.target.value)} disabled={loadingOptions}>
+                  <select value={grade} onChange={(e) => setGrade(e.target.value)} disabled={loadingOptions || !school}>
                     {grades.map(g => (
                       <option key={g} value={g}>{g}</option>
                     ))}
@@ -140,22 +219,34 @@ const StudentPerformanceAnalytics = () => {
               </div>
 
               <div className="column is-3">
-                <label className="label">Mode</label>
+                <label className="label">Student ID</label>
                 <div className="select is-fullwidth">
-                  <select value={mode} onChange={(e) => setMode(e.target.value)} disabled={loadingOptions}>
-                    <option value="subject">Subject</option>
-                    <option value="student">Student ID</option>
+                  <select 
+                    value={studentId} 
+                    onChange={(e) => {
+                      setStudentId(e.target.value)
+                      const selectedStudent = students.find(s => s.id === e.target.value)
+                      setStudentName(selectedStudent?.name || '')
+                    }} 
+                    disabled={loadingOptions || !school}
+                  >
+                    {students.map(student => (
+                      <option key={student.id} value={student.id}>
+                        {student.name} ({student.id})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className="column is-4">
-                <label className="label">{mode === 'subject' ? 'Subject' : 'Student'}</label>
+              <div className="column is-3">
+                <label className="label">Subject</label>
                 <div className="select is-fullwidth">
-                  <select value={identifier} onChange={(e) => setIdentifier(e.target.value)} disabled={loadingOptions}>
-                    {(mode === 'subject' ? subjects : students).map(item => (
-                      <option key={item.id} value={item.id}>
-                        {mode === 'subject' ? item.name : `${item.name} (${item.id})`}
+                  <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} disabled={loadingOptions || !school}>
+                    <option value="">All Subjects</option>
+                    {subjects.map(subject => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
                       </option>
                     ))}
                   </select>
@@ -196,9 +287,8 @@ const StudentPerformanceAnalytics = () => {
                 <div className="columns is-multiline mt-4">
                 <div className="column is-3">
                   <div className="box has-text-centered">
-                    <p className="heading">Analytics Mode</p>
-                    <p className="title">{mode === 'subject' ? 'Subject' : 'Student'}</p>
-                    <p className="subtitle is-7">{identifier}</p>
+                    <p className="heading">Student</p>
+                    <p className="title">{studentName || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="column is-3">
@@ -254,10 +344,13 @@ const StudentPerformanceAnalytics = () => {
                           label={buildPieLabel}
                         >
                           {(analytics.gradeDistribution || []).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                            <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip formatter={(value, name, props) => [
+                          value, 
+                          `${props.payload.name} - ${props.payload.subjectBreakdown}`
+                        ]} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -300,7 +393,12 @@ const StudentPerformanceAnalytics = () => {
                             <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip formatter={(value, name, props) => {
+                          if (props.payload.subjectBreakdown) {
+                            return [value, `${props.payload.name} - ${props.payload.subjectBreakdown}`]
+                          }
+                          return [value, props.payload.name]
+                        }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>

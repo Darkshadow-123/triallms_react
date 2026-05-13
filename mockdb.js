@@ -215,7 +215,7 @@ const ClassAnalytics = mongoose.model('ClassAnalytics', classAnalyticsSchema);
 
 const seedDatabase = async () => {
   try {
-    await mongoose.connect('mongodb+srv://rishi:Rishi121@cluster0.uaicufx.mongodb.net/mockDB?appName=Cluster0');
+    await mongoose.connect(process.env.MONGO_URI);
 
     await Promise.all([
       School.deleteMany({}), Student.deleteMany({}), Teacher.deleteMany({}),
@@ -1522,8 +1522,6 @@ const seedDatabase = async () => {
 //                 subjects[2]=Chemistry, subjects[3]=Biology, subjects[4]=English
 // Grade indices:   grades[0]=G9, grades[1]=G10, grades[2]=G11
 // ─────────────────────────────────────────────────────────────────────────────
-
-const d = (daysAgo) => new Date(Date.now() - daysAgo * 86400000);
 
 const resultReports = await ResultReport.insertMany([
 
