@@ -215,7 +215,7 @@ const ClassAnalytics = mongoose.model('ClassAnalytics', classAnalyticsSchema);
 
 const seedDatabase = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect('mongodb+srv://rishi:Rishi12312345@cluster0.uaicufx.mongodb.net/mockDB?appName=Cluster0');
 
     await Promise.all([
       School.deleteMany({}), Student.deleteMany({}), Teacher.deleteMany({}),

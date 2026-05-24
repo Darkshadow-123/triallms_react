@@ -20,7 +20,8 @@ const Chapter = () => {
     axios
       .get(`content_management/${slug}/`)
       .then(response => {
-        console.log(response.data)
+        //console.log(response.data)
+        console.log('chapter:', response.data)
         setChapter(response.data.chapter)
         setLessons(response.data.lessons)
         document.title = response.data.chapter.chapter_name + ' | VerityLMS'
@@ -47,7 +48,8 @@ const Chapter = () => {
     axios
       .post(`activities/track_started/${slug}/${lesson.slug}/`)
       .then(response => {
-        console.log(response.data)
+        //console.log(response.data)
+        console.log('activity:', response.data)
         setActivity(response.data)
       })
   }
@@ -56,7 +58,8 @@ const Chapter = () => {
     axios
       .get(`content_management/${slug}/${lesson.slug}/get-quiz/`)
       .then(response => {
-        console.log(response.data)
+        //console.log(response.data)
+        console.log('quiz:', response.data)
         setQuiz(response.data)
       })
   }
