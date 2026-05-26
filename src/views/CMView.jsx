@@ -11,12 +11,15 @@ const CMView = () => {
   const [activeGrade, setActiveGrade] = useState(null)
 
   useEffect(() => {
-    document.title = 'Content Management | VerityLMS'
+    document.title = 'Content Management - Lessons | VerityLMS'
     axios
       .get('content_management/get_grades/')
       .then(response => {
         console.log(response.data)
         setGrades(response.data)
+      })
+      .catch(error => {
+        console.error('Error fetching grades:', error)
       })
 
     getChapters()

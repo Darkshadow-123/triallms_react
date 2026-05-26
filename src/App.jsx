@@ -10,7 +10,7 @@ import AMView from './views/AMView'
 import AGView from './views/AGView'
 import HWView from './views/HWView'
 import CPAView from './views/CPAView'
-import Chapter from './views/Chapter'
+import LessonViewer from './views/LessonViewer'
 import Author from './views/Author'
 import MyAccount from './views/dashboard/MyAccount'
 import CreateChapter from './views/dashboard/CreateChapter'
@@ -30,7 +30,8 @@ function App() {
           <Route path="/performance-&-analytics" element={<CPAView />} />
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/log-in" element={<LogIn />} />
-          <Route path="/content-Management/:slug" element={<Chapter />} />
+          <Route path="/content-Management/:slug" element={<LessonViewer filterType="article" heroColor="is-info" sidebarTitle="Table of Contents" mainTitle="Introduction" />} />
+          <Route path="/assessment-Management/:slug" element={<LessonViewer filterType="quiz" heroColor="is-primary" sidebarTitle="Quizzes" mainTitle="Assessment Overview" />} />
           <Route path="/authors/:id" element={<Author />} />
           <Route path="/dashboard/my-account" element={<MyAccount />} />
           <Route path="/dashboard/create-chapter" element={<CreateChapter />} />

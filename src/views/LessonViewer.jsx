@@ -5,7 +5,7 @@ import ChapterComment from '../components/ChapterComment'
 import AddComment from '../components/AddComment'
 import Quiz from '../components/Quiz'
 
-const Chapter = () => {
+const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTitle = 'Table of Contents', mainTitle = 'Introduction' }) => {
   const { slug } = useParams()
   const [chapter, setChapter] = useState({ created_by: { id: 0 } })
   const [lessons, setLessons] = useState([])
@@ -20,13 +20,14 @@ const Chapter = () => {
     axios
       .get(`content_management/${slug}/`)
       .then(response => {
-        //console.log(response.data)
         console.log('chapter:', response.data)
         setChapter(response.data.chapter)
-        setLessons(response.data.lessons)
+        // Filter lessons by type
+        const filteredLessons = response.data.lessons.filter(lesson => lesson.lesson_type === filterType)
+        setLessons(filteredLessons)
         document.title = response.data.chapter.chapter_name + ' | VerityLMS'
       })
-  }, [slug])
+  }, [slug, filterType])
 
   const handleSubmitComment = (comment) => {
     setComments([...comments, comment])
@@ -48,9 +49,11 @@ const Chapter = () => {
     axios
       .post(`activities/track_started/${slug}/${lesson.slug}/`)
       .then(response => {
-        //console.log(response.data)
         console.log('activity:', response.data)
         setActivity(response.data)
+      })
+      .catch(error => {
+        console.error('Error tracking started:', error)
       })
   }
 
@@ -58,9 +61,11 @@ const Chapter = () => {
     axios
       .get(`content_management/${slug}/${lesson.slug}/get-quiz/`)
       .then(response => {
-        //console.log(response.data)
         console.log('quiz:', response.data)
         setQuiz(response.data)
+      })
+      .catch(error => {
+        console.error('Error fetching quiz:', error)
       })
   }
 
@@ -71,6 +76,9 @@ const Chapter = () => {
         console.log(response.data)
         setComments(response.data)
       })
+      .catch(error => {
+        console.error('Error fetching comments:', error)
+      })
   }
 
   const markAsDone = () => {
@@ -80,11 +88,14 @@ const Chapter = () => {
         console.log(response.data)
         setActivity(response.data)
       })
+      .catch(error => {
+        console.error('Error marking as done:', error)
+      })
   }
 
   return (
-    <div className="chapter">
-      <div className="hero is-info is-medium">
+    <div className="lesson-viewer">
+      <div className={`hero ${heroColor} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">{chapter.chapter_name}</h1>
           <Link
@@ -100,7 +111,7 @@ const Chapter = () => {
         <div className="container">
           <div className="columns has-text-centered content">
             <div className="column is-2">
-              <h2>Table of Contents</h2>
+              <h2>{sidebarTitle}</h2>
               <ul>
                 {lessons.map(lesson => (
                   <li key={lesson.id}>
@@ -111,7 +122,7 @@ const Chapter = () => {
             </div>
 
             <div className="column is-10">
-              <h2>Introduction</h2>
+              <h2>{mainTitle}</h2>
               {activeLesson ? (
                 <>
                   <h2>{activeLesson.title}</h2>
@@ -156,4 +167,4 @@ const Chapter = () => {
   )
 }
 
-export default Chapter
+export default LessonViewer
