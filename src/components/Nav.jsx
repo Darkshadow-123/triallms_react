@@ -34,7 +34,8 @@ const Nav = () => {
           <Link to="/assessment-Generation" className="navbar-item">Assessment Generation</Link>
           <Link to="/assessment-Management" className="navbar-item">Assessment Management</Link>
           <Link to="/homework-Management" className="navbar-item">Homework Management</Link>
-          <Link to="/performance-&-analytics" className="navbar-item">Class Performance & Analytics</Link>
+          <Link to="/performance-&-analytics" className="navbar-item">Student Performance Analytics</Link>
+          <Link to="/class-performance-analytics" className="navbar-item">Class Performance Analytics</Link>
         </div>
 
         <div className="navbar-end">

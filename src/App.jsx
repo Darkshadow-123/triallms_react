@@ -10,6 +10,7 @@ import AMView from './views/AMView'
 import AGView from './views/AGView'
 import HWView from './views/HWView'
 import CPAView from './views/CPAView'
+import ClassPerformanceAnalytics from './components/ClassPerformanceAnalytics'
 import LessonViewer from './views/LessonViewer'
 import Author from './views/Author'
 import MyAccount from './views/dashboard/MyAccount'
@@ -28,6 +29,7 @@ function App() {
           <Route path="/assessment-Generation" element={<AGView />} />
           <Route path="/homework-Management" element={<HWView />} />
           <Route path="/performance-&-analytics" element={<CPAView />} />
+          <Route path="/class-performance-analytics" element={<ClassPerformanceAnalytics />} />
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/log-in" element={<LogIn />} />
           <Route path="/content-Management/:slug" element={<LessonViewer filterType="article" heroColor="is-info" sidebarTitle="Table of Contents" mainTitle="Introduction" />} />
