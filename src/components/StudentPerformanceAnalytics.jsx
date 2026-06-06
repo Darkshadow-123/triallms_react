@@ -288,7 +288,7 @@ const StudentPerformanceAnalytics = () => {
                 <div className="column is-3">
                   <div className="box has-text-centered">
                     <p className="heading">Student</p>
-                    <p className="title">{studentName || 'N/A'}</p>
+                    <p className="title">{students.find(s => s.id === studentId)?.name || studentName || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="column is-3">
