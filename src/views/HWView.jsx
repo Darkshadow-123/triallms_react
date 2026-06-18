@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react'
+import CreateModeTabs from '../components/CreateModeTabs'
+
+const API_BASE = 'http://localhost:8001'
+
+const parseApiError = (detail, fallback) => {
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg
+  return fallback
+}
 
 const HWView = () => {
   const [homeworks, setHomeworks] = useState([])
@@ -10,6 +19,31 @@ const HWView = () => {
   const [deletingId, setDeletingId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [updatingHomework, setUpdatingHomework] = useState(false)
+  const [aiGoal, setAiGoal] = useState('')
+  const [generatingWithAi, setGeneratingWithAi] = useState(false)
+  const [createTab, setCreateTab] = useState('manual')
+  const [generatedPreview, setGeneratedPreview] = useState(null)
+  const [activeGenerationGoal, setActiveGenerationGoal] = useState('')
+
+  const resetAiState = () => {
+    setAiGoal('')
+    setGeneratedPreview(null)
+    setActiveGenerationGoal('')
+    setGeneratingWithAi(false)
+  }
+
+  const resetCreateState = () => {
+    setIsCreateMode(false)
+    setCreateTab('manual')
+    setCreateForm({
+      title: '',
+      chapter_id: '',
+      lesson_id: '',
+      published: false,
+      homework_questions: [{ question: '', answer: '' }]
+    })
+    resetAiState()
+  }
   const [editForm, setEditForm] = useState({
     title: '',
     chapter_id: '',
@@ -39,10 +73,10 @@ const HWView = () => {
     fetchHomeworks()
   }, [])
 
-  const fetchHomeworks = async (useFilters = false) => {
+  const fetchHomeworks = async (useFilters = false, silent = false) => {
     try {
-      setLoading(true)
-      let url = 'http://localhost:8001/homeworks'
+      if (!silent) setLoading(true)
+      let url = `${API_BASE}/homeworks`
       
       // If filters are being applied, use the /homework endpoint with query parameters
       if (useFilters) {
@@ -55,7 +89,7 @@ const HWView = () => {
         if (filters.published !== '') params.append('published', filters.published === 'true')
         
         if (params.toString()) {
-          url = `http://localhost:8001/homework?${params.toString()}`
+          url = `${API_BASE}/homework?${params.toString()}`
         }
       }
       
@@ -70,7 +104,7 @@ const HWView = () => {
       setError(err.message)
       setHomeworks([])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -119,7 +153,7 @@ const HWView = () => {
     setError(null)
 
     try {
-      const response = await fetch('http://localhost:8001/create-homework', {
+      const response = await fetch(`${API_BASE}/create-homework`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -129,7 +163,7 @@ const HWView = () => {
 
       if (!response.ok) {
         const err = await response.json()
-        throw new Error(err.detail?.[0]?.msg || 'Failed to create homework')
+        throw new Error(parseApiError(err.detail, 'Failed to create homework'))
       }
 
       // Reset form and refresh homeworks
@@ -140,12 +174,50 @@ const HWView = () => {
         published: false,
         homework_questions: [{ question: '', answer: '' }]
       })
+      resetAiState()
       setIsCreateMode(false)
       await fetchHomeworks()
     } catch (err) {
       setError(err.message)
     } finally {
       setCreatingHomework(false)
+    }
+  }
+
+  const handleGenerateWithAi = async () => {
+    if (!aiGoal.trim()) {
+      setError('Please enter a goal for AI generation')
+      return
+    }
+
+    setGeneratingWithAi(true)
+    setError(null)
+    setGeneratedPreview(null)
+    setActiveGenerationGoal(aiGoal.trim())
+
+    try {
+      const response = await fetch(`${API_BASE}/homework/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: aiGoal.trim() })
+      })
+
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(parseApiError(err.detail, 'Failed to generate homework with AI'))
+      }
+
+      const data = await response.json()
+      setGeneratedPreview(data)
+      if (data.homework_id) {
+        handleEditHomework(data)
+      }
+      await fetchHomeworks(false, true)
+    } catch (err) {
+      setError(err.message)
+      setActiveGenerationGoal('')
+    } finally {
+      setGeneratingWithAi(false)
     }
   }
 
@@ -179,7 +251,7 @@ const HWView = () => {
     setError(null)
 
     try {
-      const response = await fetch(`http://localhost:8001/delete/${homeworkId}`, {
+      const response = await fetch(`${API_BASE}/delete-homework/${homeworkId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
@@ -188,7 +260,7 @@ const HWView = () => {
 
       if (!response.ok) {
         const err = await response.json()
-        throw new Error(err.detail?.[0]?.msg || `Failed to delete homework: ${response.statusText}`)
+        throw new Error(parseApiError(err.detail, `Failed to delete homework: ${response.statusText}`))
       }
 
       // Refresh homeworks list after deletion
@@ -209,6 +281,11 @@ const HWView = () => {
       homework_questions: homework.homework_questions ? [...homework.homework_questions] : []
     })
     setExpandedId(null)
+  }
+
+  const handleEditGeneratedHomework = (homework) => {
+    if (editingId !== null || !homework.homework_id) return
+    handleEditHomework(homework)
   }
 
   const handleEditFormChange = (e) => {
@@ -233,7 +310,7 @@ const HWView = () => {
     setError(null)
 
     try {
-      const response = await fetch(`http://localhost:8001/update-homework/${homeworkId}`, {
+      const response = await fetch(`${API_BASE}/update-homework/${homeworkId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -243,12 +320,24 @@ const HWView = () => {
 
       if (!response.ok) {
         const err = await response.json()
-        throw new Error(err.detail?.[0]?.msg || `Failed to update homework: ${response.statusText}`)
+        throw new Error(parseApiError(err.detail, `Failed to update homework: ${response.statusText}`))
+      }
+
+      const fallbackUpdatedHomework = {
+        ...generatedPreview,
+        ...editForm,
+        homework_id: homeworkId
+      }
+      const responseData = await response.json().catch(() => null)
+      const updatedHomework = responseData?.homework_id ? responseData : fallbackUpdatedHomework
+
+      if (generatedPreview?.homework_id === homeworkId) {
+        setGeneratedPreview(updatedHomework)
       }
 
       // Reset editing state and refresh homeworks list
       setEditingId(null)
-      await fetchHomeworks()
+      await fetchHomeworks(false, Boolean(generatedPreview?.homework_id === homeworkId))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -265,6 +354,35 @@ const HWView = () => {
       homework_questions: []
     })
   }
+
+  const aiButtonStyle = {
+    borderRadius: '6px',
+    fontWeight: '600',
+    transition: 'all 0.3s ease',
+    border: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#7c3aed',
+    color: '#ffffff'
+  }
+
+  const getEditButtonStyle = (disabled) => ({
+    borderRadius: '6px',
+    fontWeight: '600',
+    backgroundColor: '#48c774',
+    border: 'none',
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '0.75rem 1.5rem',
+    opacity: disabled ? 0.6 : 1
+  })
+
+  const isEditingGeneratedHomework = Boolean(generatedPreview?.homework_id && editingId === generatedPreview.homework_id)
 
   return (
     <div className="homework-management">
@@ -487,7 +605,11 @@ const HWView = () => {
                       <button 
                         className="button is-success is-medium" 
                         type="button"
-                        onClick={() => setIsCreateMode(true)}
+                        onClick={() => {
+                          setIsCreateMode(true)
+                          setCreateTab('manual')
+                          resetAiState()
+                        }}
                         style={{ 
                           borderRadius: '6px',
                           fontWeight: '600',
@@ -512,6 +634,256 @@ const HWView = () => {
             ) : (
               // CREATE MODE
               <div className="columns is-multiline">
+                <div className="column is-full">
+                  <CreateModeTabs activeTab={createTab} onTabChange={setCreateTab} />
+                </div>
+
+                {createTab === 'ai' ? (
+                  <>
+                    <div className="column is-full">
+                      <div className="box" style={{ backgroundColor: '#faf5ff', borderLeft: '3px solid #7c3aed', marginBottom: '20px' }}>
+                        <h4 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>
+                          <i className="fas fa-robot"></i> AI Generation
+                        </h4>
+                        <div className="field">
+                          <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Goal</label>
+                          <div className="control">
+                            <textarea
+                              className="textarea"
+                              placeholder="Describe what you want to generate, e.g., 5 homework questions on Newton's laws..."
+                              value={aiGoal}
+                              onChange={(e) => setAiGoal(e.target.value)}
+                              disabled={generatingWithAi}
+                              style={{ borderColor: '#7c3aed', borderWidth: '1px', minHeight: '100px' }}
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="button is-medium"
+                          onClick={handleGenerateWithAi}
+                          disabled={generatingWithAi}
+                          style={{ ...aiButtonStyle, opacity: generatingWithAi ? 0.7 : 1 }}
+                        >
+                          <i className="fas fa-magic"></i>
+                          <span>{generatingWithAi ? 'Generating...' : 'Generate with AI'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {generatingWithAi && (
+                      <div className="column is-full">
+                        <div className="notification is-info">
+                          <p style={{ marginBottom: '8px' }}>
+                            <i className="fas fa-spinner fa-spin"></i> Generating homework content...
+                          </p>
+                          <p><strong>Goal:</strong> {activeGenerationGoal}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {generatedPreview && !generatingWithAi && (
+                      <div className="column is-full">
+                        <div className="box" style={{ backgroundColor: '#f0fdf4', borderLeft: '4px solid #48c774', marginBottom: '20px' }}>
+                          <h4 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>
+                            <i className="fas fa-check-circle" style={{ color: '#48c774' }}></i> Generated Content
+                          </h4>
+                          {editingId === generatedPreview.homework_id ? (
+                            <div className="homework-edit-form">
+                              <div className="box" style={{ backgroundColor: '#f8fafc', borderLeft: '3px solid #3273dc', marginBottom: '20px' }}>
+                                <h4 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>
+                                  <i className="fas fa-edit"></i> Edit Homework
+                                </h4>
+
+                                <div className="columns is-multiline">
+                                  <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
+                                    <div className="field">
+                                      <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Title</label>
+                                      <div className="control">
+                                        <input
+                                          className="input"
+                                          type="text"
+                                          name="title"
+                                          placeholder="e.g., Physics Homework"
+                                          value={editForm.title}
+                                          onChange={handleEditFormChange}
+                                          required
+                                          style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
+                                    <div className="field">
+                                      <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter ID</label>
+                                      <div className="control">
+                                        <input
+                                          className="input"
+                                          type="number"
+                                          name="chapter_id"
+                                          placeholder="e.g., 1"
+                                          value={editForm.chapter_id}
+                                          onChange={handleEditFormChange}
+                                          required
+                                          style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
+                                    <div className="field">
+                                      <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson ID</label>
+                                      <div className="control">
+                                        <input
+                                          className="input"
+                                          type="number"
+                                          name="lesson_id"
+                                          placeholder="e.g., 1"
+                                          value={editForm.lesson_id}
+                                          onChange={handleEditFormChange}
+                                          required
+                                          style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="column is-full">
+                                    <h5 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>
+                                      <i className="fas fa-list-ul"></i> Questions & Answers
+                                    </h5>
+                                    {editForm.homework_questions.map((q, index) => (
+                                      <div key={index} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: index < editForm.homework_questions.length - 1 ? '1px solid #ddd' : 'none' }}>
+                                        <p style={{ marginBottom: '8px', fontWeight: '600', color: '#2c3e50' }}>Question {index + 1}</p>
+                                        <div className="field" style={{ marginBottom: '15px' }}>
+                                          <div className="control">
+                                            <textarea
+                                              className="textarea"
+                                              placeholder="Enter question..."
+                                              value={q.question}
+                                              onChange={(e) => handleEditQuestionChange(index, 'question', e.target.value)}
+                                              required
+                                              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="field" style={{ marginBottom: '15px' }}>
+                                          <div className="control">
+                                            <textarea
+                                              className="textarea"
+                                              placeholder="Enter answer (optional)..."
+                                              value={q.answer}
+                                              onChange={(e) => handleEditQuestionChange(index, 'answer', e.target.value)}
+                                              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <div className="column is-full">
+                                    <div className="field is-grouped">
+                                      <div className="control">
+                                        <button
+                                          className="button is-success is-medium"
+                                          type="button"
+                                          onClick={() => handleUpdateHomework(generatedPreview.homework_id)}
+                                          disabled={updatingHomework}
+                                          style={{
+                                            borderRadius: '6px',
+                                            fontWeight: '600',
+                                            transition: 'all 0.3s ease',
+                                            border: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            padding: '0.75rem 1.5rem'
+                                          }}
+                                        >
+                                          <i className="fas fa-save"></i>
+                                          <span>{updatingHomework ? 'Saving...' : 'Save Changes'}</span>
+                                        </button>
+                                      </div>
+                                      <div className="control">
+                                        <button
+                                          className="button is-medium"
+                                          type="button"
+                                          onClick={handleCancelEdit}
+                                          disabled={updatingHomework}
+                                          style={{
+                                            borderRadius: '6px',
+                                            fontWeight: '600',
+                                            backgroundColor: '#ffffff',
+                                            border: '2px solid #3273dc',
+                                            color: '#3273dc',
+                                            transition: 'all 0.3s ease',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            padding: '0.75rem 1.5rem'
+                                          }}
+                                        >
+                                          <i className="fas fa-times"></i>
+                                          <span>Cancel</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p style={{ color: '#2c3e50', marginBottom: '15px' }}>
+                                <strong>Goal:</strong> {activeGenerationGoal}
+                              </p>
+                              <p className="help" style={{ marginBottom: '15px', color: '#666' }}>
+                                Saved automatically to the database.
+                              </p>
+                              <p style={{ marginBottom: '8px' }}>
+                                <strong>Title:</strong> {generatedPreview.title}
+                              </p>
+                              <p style={{ marginBottom: '15px' }}>
+                                <strong>Homework ID:</strong> {generatedPreview.homework_id ?? '-'} |{' '}
+                                <strong>Chapter:</strong> {generatedPreview.chapter_id} |{' '}
+                                <strong>Lesson:</strong> {generatedPreview.lesson_id}
+                              </p>
+                              <h5 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '10px' }}>Questions</h5>
+                              {generatedPreview.homework_questions?.map((q, index) => (
+                                <div key={index} style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
+                                  <p style={{ marginBottom: '6px' }}><strong>Q{index + 1}:</strong> {q.question}</p>
+                                  {q.answer && <p style={{ color: '#48c774' }}><strong>Answer:</strong> {q.answer}</p>}
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                className="button is-large"
+                                onClick={() => handleEditGeneratedHomework(generatedPreview)}
+                                disabled={editingId !== null || !generatedPreview.homework_id}
+                                style={{ ...getEditButtonStyle(editingId !== null || !generatedPreview.homework_id), marginTop: '15px' }}
+                              >
+                                <i className="fas fa-edit"></i>
+                                <span>Edit</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="column is-full">
+                      <button type="button" className="button is-medium" onClick={resetCreateState} style={{ borderRadius: '6px', fontWeight: '600', backgroundColor: '#ffffff', border: '2px solid #3273dc', color: '#3273dc', display: 'flex', alignItems: 'center', gap: '8px', padding: '0.75rem 1.5rem' }}>
+                        <i className="fas fa-times"></i><span>Cancel</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
                 <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
                   <div className="field">
                     <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
@@ -675,16 +1047,7 @@ const HWView = () => {
                       <button 
                         className="button is-medium" 
                         type="button"
-                        onClick={() => {
-                          setIsCreateMode(false)
-                          setCreateForm({
-                            title: '',
-                            chapter_id: '',
-                            lesson_id: '',
-                            published: false,
-                            homework_questions: [{ question: '', answer: '' }]
-                          })
-                        }}
+                        onClick={resetCreateState}
                         style={{ 
                           borderRadius: '6px',
                           fontWeight: '600',
@@ -715,6 +1078,8 @@ const HWView = () => {
                     </div>
                   </div>
                 </div>
+                  </>
+                )}
               </div>
             )}
           </form>
@@ -742,7 +1107,8 @@ const HWView = () => {
           <div className="homework-list">
             {homeworks.map((homework) => (
               <div 
-                key={homework.homework_id} 
+                key={homework.homework_id}
+                id={`homework-${homework.homework_id}`}
                 className="box"
                 style={{
                   cursor: 'pointer',
@@ -780,26 +1146,25 @@ const HWView = () => {
                         {homework.title}
                       </h2>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <i className="fas fa-layer-group"></i>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                      <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
                         Homework {homework.homework_id}
                       </span>
-                      <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <i className="fas fa-layer-group"></i>
+                      <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
                         Chapter {homework.chapter_id}
                       </span>
-                      <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <i className="fas fa-chalkboard"></i>
+                      <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
                         Lesson {homework.lesson_id}
                       </span>
                       <span 
                         className={`tag ${homework.published ? 'is-success' : 'is-warning'}`}
                         style={{ 
-                          fontWeight: '500',
+                          fontWeight: '600',
                           display: 'flex', 
                           alignItems: 'center', 
-                          gap: '5px',
+                          gap: '8px',
+                          padding: '12px 18px',
+                          fontSize: '15px',
                           backgroundColor: homework.published ? '#48c774' : '#ffdd57',
                           color: homework.published ? '#ffffff' : '#363636'
                         }}
@@ -807,8 +1172,7 @@ const HWView = () => {
                         <i className={`fas fa-${homework.published ? 'check-circle' : 'clock'}`}></i>
                         {homework.published ? 'Published' : 'Draft'}
                       </span>
-                      <span className="tag is-info is-light" style={{ fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <i className="fas fa-question-circle"></i>
+                      <span className="tag is-info is-light" style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
                         {homework.homework_questions?.length || 0} Questions
                       </span>
                     </div>
@@ -823,20 +1187,7 @@ const HWView = () => {
                       }}
                       disabled={editingId !== null}
                       title="Edit this homework"
-                      style={{
-                        borderRadius: '6px',
-                        fontWeight: '600',
-                        backgroundColor: '#48c774',
-                        border: 'none',
-                        color: '#ffffff',
-                        transition: 'all 0.3s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        padding: '0.75rem 1.5rem',
-                        opacity: editingId !== null ? 0.6 : 1
-                      }}
+                      style={getEditButtonStyle(editingId !== null)}
                       onMouseEnter={(e) => editingId === null && (e.target.style.boxShadow = '0 4px 12px rgba(72, 199, 116, 0.4)')}
                       onMouseLeave={(e) => (e.target.style.boxShadow = 'none')}
                     >
@@ -904,7 +1255,7 @@ const HWView = () => {
                           >
                             <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
                               <span style={{ color: '#3273dc', fontWeight: 'bold', minWidth: '30px', marginTop: '2px' }}>
-                                <i className="fas fa-question-circle">QUE:</i>
+                                QUE:
                               </span>
                               <span className="is-size-6" style={{ color: '#2c3e50', lineHeight: '1.6' }}>
                                {q.question}
@@ -913,7 +1264,7 @@ const HWView = () => {
                             {q.answer && (
                               <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginLeft: '0px' }}>
                                 <span style={{ color: '#48c774', fontWeight: 'bold', minWidth: '30px', marginTop: '2px' }}>
-                                  <i className="fas fa-lightbulb">ANS:</i>
+                                  ANS:
                                 </span>
                                 <span className="is-size-6" style={{ color: '#555', lineHeight: '1.6' }}>
                                  {q.answer}
@@ -931,7 +1282,7 @@ const HWView = () => {
                   </div>
                 )}
 
-                {editingId === homework.homework_id && (
+                {editingId === homework.homework_id && !isEditingGeneratedHomework && (
                   <div className="homework-edit-form" style={{ marginTop: '20px', paddingTop: '20px' }}>
                     <div className="box" style={{ backgroundColor: '#f8fafc', borderLeft: '3px solid #3273dc', marginBottom: '20px' }}>
                       <h4 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>

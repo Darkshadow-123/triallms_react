@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv'
 
 // ============================================================
 // EXPANDED MOCK SEED DATA — Realistic, consistent, comprehensive
@@ -213,9 +214,11 @@ const PastPerformanceHistory = mongoose.model('PastPerformanceHistory', pastPerf
 const StudentAnalytics = mongoose.model('StudentAnalytics', studentAnalyticsSchema);
 const ClassAnalytics = mongoose.model('ClassAnalytics', classAnalyticsSchema);
 
+const MONGO_URI = process.env.MONGO_URI
+
 const seedDatabase = async () => {
   try {
-    await mongoose.connect('mongodb+srv://rishi:Rishi12312345@cluster0.uaicufx.mongodb.net/mockDB?appName=Cluster0');
+    await mongoose.connect(process.env.MONGO_URI);
 
     await Promise.all([
       School.deleteMany({}), Student.deleteMany({}), Teacher.deleteMany({}),

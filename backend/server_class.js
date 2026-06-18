@@ -18,7 +18,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-const MONGO_URI = process.env.MONGO_URI || ''
+const MONGO_URI = process.env.MONGO_URI
 const PORT = 5002  // Class Analytics server always runs on 5002
 
 // Connect to MongoDB with retry logic

@@ -55,61 +55,125 @@ const CMView = () => {
 
       <section className="section">
         <div className="container">
-          <div className="columns has-text-centered">
-            <div className="columns is-2">
-              <aside className="menu">
-                <p className="menu-label">Grades</p>
-                <ul className="menu-list">
-                  <li>
-                    <a
-                      className={!activeGrade ? 'is-active' : ''}
-                      onClick={() => handleGradeClick(null)}
-                    >
-                      All Grades
-                    </a>
-                  </li>
-                  {grades.map(grade => (
-                    <li key={grade.id}>
-                      <a onClick={() => handleGradeClick(grade)}>Grade {grade.grade}</a>
+          <div className="columns">
+            <div className="column is-3">
+              <div 
+                className="box" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
+                  borderLeft: '5px solid #3273dc',
+                  boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)',
+                  position: 'sticky',
+                  top: '20px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                  <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                    <i className="fas fa-filter"></i>
+                  </span>
+                  <h3 className="subtitle is-5" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
+                    Filter by Grade
+                  </h3>
+                </div>
+                <aside className="menu">
+                  <ul className="menu-list">
+                    <li>
+                      <a
+                        onClick={() => handleGradeClick(null)}
+                        style={{
+                          cursor: 'pointer',
+                          color: !activeGrade ? '#3273dc' : '#2c3e50',
+                          fontWeight: !activeGrade ? '600' : '500',
+                          borderLeft: !activeGrade ? '3px solid #3273dc' : 'none',
+                          paddingLeft: !activeGrade ? '12px' : '15px',
+                          backgroundColor: !activeGrade ? '#eff4fb' : 'transparent',
+                          transition: 'all 0.3s ease',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        <i className="fas fa-list" style={{ marginRight: '8px' }}></i>
+                        All Grades
+                      </a>
                     </li>
-                  ))}
-                </ul>
-              </aside>
+                    {grades.map(grade => (
+                      <li key={grade.id}>
+                        <a 
+                          onClick={() => handleGradeClick(grade)}
+                          style={{
+                            cursor: 'pointer',
+                            color: activeGrade?.id === grade.id ? '#3273dc' : '#2c3e50',
+                            fontWeight: activeGrade?.id === grade.id ? '600' : '500',
+                            borderLeft: activeGrade?.id === grade.id ? '3px solid #3273dc' : 'none',
+                            paddingLeft: activeGrade?.id === grade.id ? '12px' : '15px',
+                            backgroundColor: activeGrade?.id === grade.id ? '#eff4fb' : 'transparent',
+                            transition: 'all 0.3s ease',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <i className="fas fa-graduation-cap" style={{ marginRight: '8px' }}></i>
+                          Grade {grade.grade}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </aside>
+              </div>
             </div>
 
-            <div className="column is-10">
-              <div className="columns is-multiline">
-                {user.isAuthenticated ? (
-                  chapters.map(chapter => (
-                    <div key={chapter.id} className="column is-4">
-                      <ChapterItem chapter={chapter} />
+            <div className="column is-9">
+              {user.isAuthenticated ? (
+                <>
+                  {chapters.length > 0 ? (
+                    <div className="columns is-multiline">
+                      {chapters.map(chapter => (
+                        <div key={chapter.id} className="column is-6-tablet is-4-widescreen">
+                          <ChapterItem chapter={chapter} />
+                        </div>
+                      ))}
                     </div>
-                  ))
-                ) : (
-                  <>
-                    <h2>Restricted Access</h2>
-                    <p>You need to have access or log in !!</p>
-                  </>
-                )}
-
-                <div className="column is-12">
-                  <nav className="pagination">
-                    <a className="pagination-previous">Previous</a>
-                    <a className="pagination-next">Next</a>
-                    <ul className="pagination-list">
-                      <li>
-                        <a className="pagination-link is-current">1</a>
-                      </li>
-                      <li>
-                        <a className="pagination-link">2</a>
-                      </li>
-                      <li>
-                        <a className="pagination-link">3</a>
-                      </li>
-                    </ul>
-                  </nav>
+                  ) : (
+                    <div 
+                      className="box" 
+                      style={{ 
+                        background: 'linear-gradient(135deg, #fff9e6 0%, #fff3d5 100%)',
+                        borderLeft: '5px solid #ffdd57',
+                        boxShadow: '0 2px 8px rgba(255, 221, 87, 0.1)',
+                        textAlign: 'center',
+                        padding: '40px 20px'
+                      }}
+                    >
+                      <div style={{ marginBottom: '15px' }}>
+                        <i className="fas fa-inbox" style={{ fontSize: '48px', color: '#ffdd57', marginBottom: '15px' }}></i>
+                      </div>
+                      <h3 className="subtitle is-5" style={{ color: '#2c3e50', fontWeight: '600', marginBottom: '10px' }}>
+                        No Chapters Found
+                      </h3>
+                      <p style={{ color: '#666', fontSize: '14px' }}>
+                        {activeGrade ? `No chapters available for Grade ${activeGrade.grade}` : 'Select a grade to view chapters'}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div 
+                  className="box" 
+                  style={{ 
+                    background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
+                    borderLeft: '5px solid #f05149',
+                    boxShadow: '0 2px 8px rgba(240, 81, 73, 0.1)',
+                    textAlign: 'center',
+                    padding: '40px 20px'
+                  }}
+                >
+                  <div style={{ marginBottom: '15px' }}>
+                    <i className="fas fa-lock" style={{ fontSize: '48px', color: '#f05149', marginBottom: '15px' }}></i>
+                  </div>
+                  <h2 className="subtitle is-5" style={{ color: '#2c3e50', fontWeight: '600', marginBottom: '10px' }}>
+                    Restricted Access
+                  </h2>
+                  <p style={{ color: '#666' }}>You need to be authenticated to view content.</p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
