@@ -19,8 +19,7 @@ const HomeView = () => {
     <div className="home">
       <div className="hero is-info is-medium">
         <div className="hero-body has-text-centered">
-          <h1 className="title">Welcom to VerityLMS</h1>
-          <h2 className="subtitle">There is nothing to add</h2>
+          <h1 className="title">Welcome to VerityLMS</h1>
         </div>
       </div>
 
