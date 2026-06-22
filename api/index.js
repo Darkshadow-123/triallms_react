@@ -674,7 +674,131 @@ router.get('/SPA/:school/:grade/past_performance/:identifier', async (req, res) 
   }
 })
 
+
+router.get('/CPA/:school/:grade/class_analytics', async (req, res) => {
+  try {
+    const { school, grade } = req.params;
+
+    const gradeDoc = await Grade.findOne({ gradeId: grade, schools: school });
+    if (!gradeDoc) {
+      return res.status(404).json({ message: 'Grade not found for this school' });
+    }
+
+    const gradeReports = await ResultReport.find({ grade: gradeDoc.gradeId });
+    const allStudents = await Student.find({ schoolId: school });
+    const studentMap = new Map(allStudents.map(s => [s.studentId, s.name]));
+
+    const validReports = gradeReports.filter(r => studentMap.has(r.studentId));
+
+    const subjectIds = [...new Set(validReports.map(item => item.subjectId).filter(Boolean))];
+    const subjectsInGrade = await Subject.find({ subjectId: { $in: subjectIds } });
+    const subjectMap = new Map(subjectsInGrade.map(s => [s.subjectId, s.subjectName]));
+
+    const enrichedReports = validReports.map(report => ({
+      ...report.toObject(),
+      subjectName: subjectMap.get(report.subjectId) || 'Unknown'
+    }));
+
+    const scores = validReports.map(r => r.result || 0);
+    const classAverage = scores.length > 0 ? Math.round(average(scores) * 100) / 100 : 0;
+
+    const subjectPerformance = subjectsInGrade.map(subject => {
+      const reps = validReports.filter(r => r.subjectId === subject.subjectId);
+      return {
+        name: subject.subjectName,
+        avgScore: reps.length > 0 ? Math.round(average(reps.map(r => r.result || 0)) * 100) / 100 : 0
+      };
+    });
+
+    const gradeDistribution = buildDistributionWithSubjects(enrichedReports);
+    const monthlyTrend = buildMonthlyTrend(validReports);
+
+    const homeworkReports = await HomeworkReport.find({ grade: gradeDoc.gradeId });
+    const homeworkStatus = buildHomeworkStatusBySubject(homeworkReports, subjectMap);
+
+    const skillRadarMap = {};
+    subjectPerformance.forEach(sp => { skillRadarMap[sp.name] = sp.avgScore; });
+    const skillRadar = buildDynamicRadarData(skillRadarMap, getSubjectCombination(Object.keys(skillRadarMap)));
+
+    const moduleGroups = new Map();
+    validReports.forEach(r => {
+      const mk = r.moduleNo || 'Unknown';
+      const ex = moduleGroups.get(mk) || { count: 0, total: 0 };
+      ex.count++;
+      ex.total += r.result || 0;
+      moduleGroups.set(mk, ex);
+    });
+    const assessmentComparison = Array.from(moduleGroups.entries()).map(([name, data]) => ({
+      name, averageScore: Math.round((data.total / data.count) * 100) / 100
+    }));
+
+    const bestPerformingStudents = {};
+    const leastPerformingStudents = {};
+    
+    subjectsInGrade.forEach(subj => {
+      const reps = validReports.filter(r => r.subjectId === subj.subjectId);
+      const studentAvgs = new Map();
+      reps.forEach(r => {
+        const ex = studentAvgs.get(r.studentId) || { count: 0, total: 0 };
+        ex.count++;
+        ex.total += r.result || 0;
+        studentAvgs.set(r.studentId, ex);
+      });
+      
+      const sortedStudents = Array.from(studentAvgs.entries()).map(([sId, data]) => ({
+        studentName: studentMap.get(sId) || sId,
+        score: Math.round((data.total / data.count) * 100) / 100
+      })).sort((a, b) => b.score - a.score);
+
+      bestPerformingStudents[subj.subjectName] = sortedStudents.slice(0, 5);
+      leastPerformingStudents[subj.subjectName] = sortedStudents.slice().reverse().slice(0, 5);
+    });
+
+    const distCategories = [
+      { name: '90-100', min: 90, max: 100, count: 0 },
+      { name: '80-89', min: 80, max: 89, count: 0 },
+      { name: '70-79', min: 70, max: 79, count: 0 },
+      { name: '60-69', min: 60, max: 69, count: 0 },
+      { name: '<60', min: 0, max: 59, count: 0 }
+    ];
+    
+    const allStudentAvgs = new Map();
+    validReports.forEach(r => {
+      const ex = allStudentAvgs.get(r.studentId) || { count: 0, total: 0 };
+      ex.count++;
+      ex.total += r.result || 0;
+      allStudentAvgs.set(r.studentId, ex);
+    });
+    
+    allStudentAvgs.forEach((data, sId) => {
+      const avg = data.total / data.count;
+      const cat = distCategories.find(c => avg >= c.min && avg <= c.max);
+      if (cat) cat.count++;
+    });
+
+    res.json({
+      analytics: {
+        totalStudents: allStudentAvgs.size,
+        classAverage,
+        subjectPerformance,
+        gradeDistribution,
+        monthlyTrend,
+        homeworkStatus,
+        studentPerformanceDistribution: distCategories,
+        skillRadar,
+        bestPerformingStudents,
+        leastPerformingStudents,
+        assessmentComparison
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 app.use('/api', router)
+
 
 export default app
 
