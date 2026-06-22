@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom'
+import { useContext } from 'react'
+import { RoleContext } from '../context/RoleContext'
 
 const ChapterItem = ({ chapter }) => {
+  const { themeClass, themeHex, themeGradient } = useContext(RoleContext)
   return (
     <div
       style={{
-        background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-        borderLeft: '5px solid #3273dc',
-        boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)',
+        background: themeGradient,
+        borderLeft: `5px solid ${themeHex}`,
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
         borderRadius: '6px',
         overflow: 'hidden',
         transition: 'all 0.3s ease',
@@ -16,11 +19,11 @@ const ChapterItem = ({ chapter }) => {
         flexDirection: 'column'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(50, 115, 220, 0.25)'
+        e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.15)'
         e.currentTarget.style.transform = 'translateY(-4px)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(50, 115, 220, 0.1)'
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
         e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
@@ -45,7 +48,7 @@ const ChapterItem = ({ chapter }) => {
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: '1' }}>
         <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <i className="fas fa-book" style={{ fontSize: '24px', color: '#3273dc' }}></i>
+          <i className="fas fa-book" style={{ fontSize: '24px', color: themeHex }}></i>
           <h3
           style={{
             fontSize: '20px',
@@ -73,11 +76,10 @@ const ChapterItem = ({ chapter }) => {
 
         <Link
         to={`/content-Management/${chapter.slug}`}
+        className={`button ${themeClass}`}
         style={{
-          display: 'inline-block',
-          padding: '10px 18px',
-          background: '#3273dc',
-          color: 'white',
+          display: 'inline-flex',
+          alignItems: 'center',
           borderRadius: '4px',
           textDecoration: 'none',
           fontSize: '14px',
@@ -88,12 +90,12 @@ const ChapterItem = ({ chapter }) => {
           alignSelf: 'flex-start'
         }}
         onMouseEnter={(e) => {
-          e.target.style.background = '#1f5ab5'
-          e.target.style.boxShadow = '0 4px 12px rgba(50, 115, 220, 0.4)'
+          e.currentTarget.style.opacity = '0.9'
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
         }}
         onMouseLeave={(e) => {
-          e.target.style.background = '#3273dc'
-          e.target.style.boxShadow = 'none'
+          e.currentTarget.style.opacity = '1'
+          e.currentTarget.style.boxShadow = 'none'
         }}
       >
         <i className="fas fa-arrow-right" style={{ marginRight: '8px' }}></i>

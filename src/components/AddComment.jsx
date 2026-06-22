@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from '../api'
+import { RoleContext } from '../context/RoleContext'
 
 const AddComment = ({ activeLesson, onSubmitComment }) => {
+  const { themeClass } = useContext(RoleContext)
   const { slug } = useParams()
   const [comment, setComment] = useState({
     name: '',
@@ -66,7 +68,7 @@ const AddComment = ({ activeLesson, onSubmitComment }) => {
 
       <div className="field">
         <div className="control">
-          <button className="button is-link">Submit</button>
+          <button className={`button ${themeClass}`}>Submit</button>
         </div>
       </div>
     </form>

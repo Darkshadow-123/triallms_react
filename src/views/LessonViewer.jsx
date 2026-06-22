@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import axios from '../api'
-import ChapterComment from '../components/ChapterComment'
-import AddComment from '../components/AddComment'
 import Quiz from '../components/Quiz'
+import { RoleContext } from '../context/RoleContext'
 
-const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTitle = 'Table of Contents', mainTitle = 'Introduction' }) => {
+const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Contents', mainTitle = 'Introduction' }) => {
+  const { themeClass, themeHex, themeGradient, themeLightHex } = useContext(RoleContext)
   const { slug } = useParams()
   const [chapter, setChapter] = useState({ created_by: { id: 0 } })
   const [lessons, setLessons] = useState([])
-  const [comments, setComments] = useState([])
+
   const [activeLesson, setActiveLesson] = useState(null)
   const [quiz, setQuiz] = useState({})
   const [activity, setActivity] = useState({})
@@ -29,17 +29,12 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
       })
   }, [slug, filterType])
 
-  const handleSubmitComment = (comment) => {
-    setComments([...comments, comment])
-  }
 
   const setActiveLessonHandler = (lesson) => {
     setActiveLesson(lesson)
 
     if (lesson.lesson_type === 'quiz') {
       getQuiz(lesson)
-    } else {
-      getComments(lesson)
     }
 
     trackStarted(lesson)
@@ -69,17 +64,6 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
       })
   }
 
-  const getComments = (lesson) => {
-    axios
-      .get(`content_management/${slug}/${lesson.slug}/get-comments/`)
-      .then(response => {
-        console.log(response.data)
-        setComments(response.data)
-      })
-      .catch(error => {
-        console.error('Error fetching comments:', error)
-      })
-  }
 
   const markAsDone = () => {
     axios
@@ -95,7 +79,7 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
 
   return (
     <div className="lesson-viewer">
-      <div className={`hero ${heroColor} is-medium`}>
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">{chapter.chapter_name}</h1>
           <Link
@@ -116,15 +100,15 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
               <div 
                 className="box" 
                 style={{ 
-                  background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                  borderLeft: '5px solid #3273dc',
-                  boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)',
+                  background: themeGradient,
+                  borderLeft: `5px solid ${themeHex}`,
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                   position: 'sticky',
                   top: '20px'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                  <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                  <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                     <i className="fas fa-list-ul"></i>
                   </span>
                   <h2 className="subtitle is-5" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
@@ -142,19 +126,19 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
                           alignItems: 'center',
                           gap: '10px',
                           padding: '12px 15px',
-                          color: activeLesson?.id === lesson.id ? '#3273dc' : '#2c3e50',
+                          color: activeLesson?.id === lesson.id ? themeHex : '#2c3e50',
                           fontWeight: activeLesson?.id === lesson.id ? '600' : '500',
                           backgroundColor: activeLesson?.id === lesson.id ? '#eff4fb' : 'transparent',
-                          borderLeft: activeLesson?.id === lesson.id ? '3px solid #3273dc' : 'none',
+                          borderLeft: activeLesson?.id === lesson.id ? `3px solid ${themeHex}` : 'none',
                           paddingLeft: activeLesson?.id === lesson.id ? '12px' : '15px',
                           borderRadius: '4px',
                           transition: 'all 0.3s ease',
-                          hoverColor: '#3273dc'
+                          hoverColor: themeHex
                         }}
                         onMouseEnter={(e) => {
                           if (activeLesson?.id !== lesson.id) {
                             e.target.style.backgroundColor = '#f0f7ff'
-                            e.target.style.color = '#3273dc'
+                            e.target.style.color = themeHex
                           }
                         }}
                         onMouseLeave={(e) => {
@@ -166,7 +150,7 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
                       >
                         <i 
                           className={`fas fa-${lesson.lesson_type === 'quiz' ? 'question-circle' : 'file-alt'}`}
-                          style={{ color: '#3273dc', minWidth: '20px' }}
+                          style={{ color: themeHex, minWidth: '20px' }}
                         ></i>
                         <span>{lesson.title}</span>
                       </a>
@@ -185,14 +169,14 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
                     className="box" 
                     style={{ 
                       marginBottom: '30px',
-                      background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                      borderLeft: '5px solid #3273dc',
-                      boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
+                      background: themeGradient,
+                      borderLeft: `5px solid ${themeHex}`,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
-                        <span className="icon" style={{ color: '#3273dc' }}>
+                        <span className="icon" style={{ color: themeHex }}>
                           <i className={`fas fa-${activeLesson.lesson_type === 'quiz' ? 'question-circle' : 'book-open'}`}></i>
                         </span>
                         <div>
@@ -259,8 +243,8 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
                     style={{ 
                       marginBottom: '30px',
                       padding: '30px',
-                      borderLeft: '5px solid #3273dc',
-                      boxShadow: '0 2px 8px rgba(50, 115, 220, 0.08)'
+                      borderLeft: `5px solid ${themeHex}`,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
                     }}
                   >
                     <div style={{ lineHeight: '1.8', color: '#2c3e50', fontSize: '16px' }}>
@@ -268,19 +252,19 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
                     </div>
                   </div>
 
-                  {/* Quiz or Comments Section */}
-                  {activeLesson.lesson_type === 'quiz' ? (
+                  {/* Quiz Section */}
+                  {activeLesson.lesson_type === 'quiz' && (
                     <div 
                       className="box" 
                       style={{ 
                         marginBottom: '30px',
-                        background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                        borderLeft: '5px solid #3273dc',
-                        boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
+                        background: themeGradient,
+                        borderLeft: `5px solid ${themeHex}`,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                        <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                        <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                           <i className="fas fa-question-circle"></i>
                         </span>
                         <h3 className="subtitle is-5" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
@@ -289,82 +273,21 @@ const LessonViewer = ({ filterType = 'article', heroColor = 'is-info', sidebarTi
                       </div>
                       <Quiz quiz={quiz} />
                     </div>
-                  ) : (
-                    <>
-                      {/* Comments Section */}
-                      <div 
-                        className="box" 
-                        style={{ 
-                          marginBottom: '30px',
-                          background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                          borderLeft: '5px solid #3273dc',
-                          boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                          <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
-                            <i className="fas fa-comments"></i>
-                          </span>
-                          <h3 className="subtitle is-5" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
-                            Comments
-                          </h3>
-                        </div>
-                        
-                        {comments.length > 0 ? (
-                          <div style={{ marginBottom: '30px' }}>
-                            {comments.map(comment => (
-                              <div key={comment.id} style={{ marginBottom: '20px' }}>
-                                <ChapterComment comment={comment} />
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-                            <i className="fas fa-inbox" style={{ fontSize: '32px', marginBottom: '10px' }}></i>
-                            <p>No comments yet. Be the first to comment!</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Add Comment Section */}
-                      <div 
-                        className="box" 
-                        style={{ 
-                          background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                          borderLeft: '5px solid #3273dc',
-                          boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                          <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
-                            <i className="fas fa-pen"></i>
-                          </span>
-                          <h3 className="subtitle is-5" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
-                            Add Your Comment
-                          </h3>
-                        </div>
-                        <AddComment
-                          chapter={chapter}
-                          activeLesson={activeLesson}
-                          onSubmitComment={handleSubmitComment}
-                        />
-                      </div>
-                    </>
                   )}
                 </>
               ) : (
                 <div 
                   className="box" 
                   style={{ 
-                    background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                    borderLeft: '5px solid #3273dc',
-                    boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)',
+                    background: themeGradient,
+                    borderLeft: `5px solid ${themeHex}`,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                     textAlign: 'center',
                     padding: '60px 40px'
                   }}
                 >
                   <div style={{ marginBottom: '20px' }}>
-                    <i className="fas fa-book-open" style={{ fontSize: '48px', color: '#3273dc', marginBottom: '20px' }}></i>
+                    <i className="fas fa-book-open" style={{ fontSize: '48px', color: themeHex, marginBottom: '20px' }}></i>
                   </div>
                   <h2 className="subtitle is-5" style={{ color: '#2c3e50', fontWeight: '600', marginBottom: '10px' }}>
                     {mainTitle}

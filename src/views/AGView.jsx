@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
+import axios from '../api'
 import CreateModeTabs from '../components/CreateModeTabs'
+import { RoleContext } from '../context/RoleContext'
 
 const API_BASE = 'http://localhost:8001'
 
@@ -49,6 +51,7 @@ const mapAnswersPoolFromApi = (answersPool = []) => {
 }
 
 const AGView = () => {
+  const { themeClass , themeHex, activeRole } = useContext(RoleContext)
   const [assessments, setAssessments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -63,6 +66,12 @@ const AGView = () => {
   const [createTab, setCreateTab] = useState('manual')
   const [generatedPreview, setGeneratedPreview] = useState(null)
   const [activeGenerationGoal, setActiveGenerationGoal] = useState('')
+  const [grades, setGrades] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [activeGrade, setActiveGrade] = useState('')
+  const [activeSubject, setActiveSubject] = useState('')
+  const [chapters, setChapters] = useState([])
+  const [lessons, setLessons] = useState([])
 
   const resetAiState = () => {
     setAiGoal('')
@@ -114,7 +123,47 @@ const AGView = () => {
 
   useEffect(() => {
     fetchAssessments()
+    axios
+      .get('content_management/get_grades/')
+      .then(response => setGrades(response.data))
+      .catch(error => console.error('Error fetching grades:', error))
+      
+    axios
+      .get('content_management/subjects/')
+      .then(response => setSubjects(response.data))
+      .catch(error => console.error('Error fetching subjects:', error))
   }, [])
+
+  useEffect(() => {
+    if (!activeGrade && !activeSubject) return
+    let url = 'content_management/'
+    const queryParams = []
+    if (activeGrade) queryParams.push(`grade_id=${activeGrade}`)
+    if (activeSubject) queryParams.push(`subject_id=${activeSubject}`)
+    if (queryParams.length > 0) url += '?' + queryParams.join('&')
+
+    axios
+      .get(url)
+      .then(response => setChapters(response.data))
+      .catch(error => {
+        console.error('Error fetching chapters:', error)
+        setChapters([])
+      })
+  }, [activeGrade, activeSubject])
+
+  useEffect(() => {
+    if (createForm.chapter_id) {
+      axios
+        .get(`content_management/${createForm.chapter_id}/`)
+        .then(response => setLessons(response.data.lessons || []))
+        .catch(error => {
+          console.error('Error fetching lessons:', error)
+          setLessons([])
+        })
+    } else {
+      setLessons([])
+    }
+  }, [createForm.chapter_id])
 
   const fetchAssessments = async (useFilters = false, silent = false) => {
     try {
@@ -226,11 +275,16 @@ const AGView = () => {
     setCreatingAssessment(true)
     setError(null)
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
     const payload = {
       title: createForm.title,
-      chapter_id: parseInt(createForm.chapter_id, 10),
-      lesson_id: parseInt(createForm.lesson_id, 10),
-      mcq_batch: parseInt(createForm.mcq_batch, 10),
+      chapter_id: safeExtractId(createForm.chapter_id),
+      lesson_id: safeExtractId(createForm.lesson_id),
+      mcq_batch: parseInt(createForm.mcq_batch, 10) || 1,
       mcq_pool: buildMcqPoolPayload(createForm.mcq_pool),
       answers_pool: createForm.answers_pool
     }
@@ -271,16 +325,30 @@ const AGView = () => {
       return
     }
 
+    if (!createForm.chapter_id || !createForm.lesson_id) {
+      setError("Please select a Chapter and Lesson before generating.")
+      return
+    }
+
     setGeneratingWithAi(true)
     setError(null)
     setGeneratedPreview(null)
     setActiveGenerationGoal(aiGoal.trim())
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
     try {
       const response = await fetch(`${API_BASE}/assessment/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal: aiGoal.trim() })
+        body: JSON.stringify({ 
+          goal: aiGoal.trim(),
+          chapter_id: safeExtractId(createForm.chapter_id),
+          lesson_id: safeExtractId(createForm.lesson_id)
+        })
       })
 
       if (!response.ok) {
@@ -440,11 +508,16 @@ const AGView = () => {
     setUpdatingAssessment(true)
     setError(null)
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
     const payload = {
       title: editForm.title,
-      chapter_id: editForm.chapter_id,
-      lesson_id: editForm.lesson_id,
-      mcq_batch: editForm.mcq_batch,
+      chapter_id: safeExtractId(editForm.chapter_id),
+      lesson_id: safeExtractId(editForm.lesson_id),
+      mcq_batch: parseInt(editForm.mcq_batch, 10) || 1,
       published: editForm.published,
       mcq_pool: buildMcqPoolPayload(editForm.mcq_pool),
       answers_pool: editForm.answers_pool
@@ -511,7 +584,7 @@ const AGView = () => {
               value={mcq.question}
               onChange={(e) => onMcqChange(index, 'question', e.target.value)}
               required
-              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+              style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
             />
           </div>
         </div>
@@ -527,7 +600,7 @@ const AGView = () => {
                 placeholder={`Option ${optIndex + 1}`}
                 value={option}
                 onChange={(e) => onOptionChange(index, optIndex, e.target.value)}
-                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                style={{ borderColor: themeHex, borderWidth: '1px' }}
               />
             </div>
           </div>
@@ -543,7 +616,7 @@ const AGView = () => {
               placeholder="Enter correct answer..."
               value={mcq.correct_answer || ''}
               onChange={(e) => onMcqChange(index, 'correct_answer', e.target.value)}
-              style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+              style={{ borderColor: themeHex, borderWidth: '1px' }}
             />
           </div>
         </div>
@@ -580,7 +653,7 @@ const AGView = () => {
               value={item.question}
               onChange={(e) => onAnswerChange(index, 'question', e.target.value)}
               required
-              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+              style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
             />
           </div>
         </div>
@@ -592,7 +665,7 @@ const AGView = () => {
               value={item.answer}
               onChange={(e) => onAnswerChange(index, 'answer', e.target.value)}
               required
-              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+              style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
             />
           </div>
         </div>
@@ -612,7 +685,7 @@ const AGView = () => {
 
   return (
     <div className="assessment-generation">
-      <div className="hero is-info is-medium">
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">Assessment Generation</h1>
         </div>
@@ -629,12 +702,41 @@ const AGView = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-            <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+            <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
               <i className={`fas fa-${isCreateMode ? 'plus-circle' : 'filter'}`}></i>
             </span>
             <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50' }}>
               {isCreateMode ? 'Create Assessment' : 'Search & Filter Assessments'}
             </h2>
+          </div>
+
+          <div className="columns is-multiline mb-4">
+            <div className="column is-half">
+              <div className="field">
+                <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Select Grade (Filter Chapters)</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select value={activeGrade} onChange={e => setActiveGrade(e.target.value)} style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}>
+                      <option value="">All Grades</option>
+                      {grades.map(g => <option key={g.id || g.uid} value={g.id || g.uid}>Grade {g.grade}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="column is-half">
+              <div className="field">
+                <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Select Subject (Filter Chapters)</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select value={activeSubject} onChange={e => setActiveSubject(e.target.value)} style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}>
+                      <option value="">All Subjects</option>
+                      {subjects.map(s => <option key={s.id || s.uid} value={s.id || s.uid}>{s.subject_name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <form onSubmit={isCreateMode ? handleCreateAssessment : handleSearch}>
@@ -656,9 +758,9 @@ const AGView = () => {
                         placeholder="e.g., 1"
                         value={filters.assessment_id}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-clipboard-list"></i>
                       </span>
                     </div>
@@ -681,9 +783,9 @@ const AGView = () => {
                         placeholder="e.g., World War 1 Assessment"
                         value={filters.title}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-file-alt"></i>
                       </span>
                     </div>
@@ -706,9 +808,9 @@ const AGView = () => {
                         placeholder="e.g., 1"
                         value={filters.chapter_id}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-layer-group"></i>
                       </span>
                     </div>
@@ -731,9 +833,9 @@ const AGView = () => {
                         placeholder="e.g., 1"
                         value={filters.lesson_id}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-chalkboard"></i>
                       </span>
                     </div>
@@ -756,9 +858,9 @@ const AGView = () => {
                         placeholder="e.g., 5"
                         value={filters.mcq_batch}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-tasks"></i>
                       </span>
                     </div>
@@ -779,14 +881,14 @@ const AGView = () => {
                           name="published"
                           value={filters.published}
                           onChange={handleFilterChange}
-                          style={{ borderColor: '#3273dc', borderWidth: '1px', color: '#2c3e50' }}
+                          style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
                         >
                           <option value="">All Status</option>
                           <option value="true">Published</option>
                           <option value="false">Draft</option>
                         </select>
                       </div>
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-bars"></i>
                       </span>
                     </div>
@@ -797,7 +899,7 @@ const AGView = () => {
                   <div className="field is-grouped">
                     <div className="control">
                       <button
-                        className="button is-info is-medium"
+                        className={`button ${themeClass} is-medium`}
                         type="submit"
                         style={{
                           borderRadius: '6px',
@@ -825,7 +927,7 @@ const AGView = () => {
                           fontWeight: '600',
                           backgroundColor: '#ffffff',
                           border: '2px solid #3273dc',
-                          color: '#3273dc',
+                          color: themeHex,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -838,28 +940,30 @@ const AGView = () => {
                       </button>
                     </div>
                     <div className="control">
-                      <button
-                        className="button is-success is-medium"
-                        type="button"
-                        onClick={() => {
-                          setIsCreateMode(true)
-                          setCreateTab('manual')
-                          resetAiState()
-                        }}
-                        style={{
-                          borderRadius: '6px',
-                          fontWeight: '600',
-                          border: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          padding: '0.75rem 1.5rem'
-                        }}
-                      >
-                        <i className="fas fa-plus"></i>
-                        <span>Create Assessment</span>
-                      </button>
+                      {activeRole === 'Teacher' && (
+                        <button
+                          className={`button ${themeClass} is-medium`}
+                          type="button"
+                          onClick={() => {
+                            setIsCreateMode(true)
+                            setCreateTab('manual')
+                            resetAiState()
+                          }}
+                          style={{
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '0.75rem 1.5rem'
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                          <span>Create Assessment</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -877,6 +981,57 @@ const AGView = () => {
                         <h4 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>
                           <i className="fas fa-robot"></i> AI Generation
                         </h4>
+                        
+                        <div className="columns is-multiline">
+                          <div className="column is-half">
+                            <div className="field">
+                              <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter</label>
+                              <div className="control has-icons-left">
+                                <div className="select is-fullwidth">
+                                  <select
+                                    name="chapter_id"
+                                    value={createForm.chapter_id}
+                                    onChange={handleCreateFormChange}
+                                    style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
+                                  >
+                                    <option value="">Select a Chapter</option>
+                                    {chapters.map(chapter => (
+                                      <option key={chapter.id || chapter.uid} value={chapter.id || chapter.uid}>{chapter.chapter_name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <span className="icon is-left" style={{ color: themeHex }}>
+                                  <i className="fas fa-layer-group"></i>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="column is-half">
+                            <div className="field">
+                              <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson</label>
+                              <div className="control has-icons-left">
+                                <div className="select is-fullwidth">
+                                  <select
+                                    name="lesson_id"
+                                    value={createForm.lesson_id}
+                                    onChange={handleCreateFormChange}
+                                    style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
+                                  >
+                                    <option value="">Select a Lesson</option>
+                                    {lessons.map(lesson => (
+                                      <option key={lesson.id || lesson.uid} value={lesson.id || lesson.uid}>{lesson.title || lesson.lesson_name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <span className="icon is-left" style={{ color: themeHex }}>
+                                  <i className="fas fa-chalkboard"></i>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="field">
                           <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Goal</label>
                           <div className="control">
@@ -892,7 +1047,7 @@ const AGView = () => {
                         </div>
                         <button
                           type="button"
-                          className="button is-medium"
+                          className={`button ${themeClass} is-medium`}
                           onClick={handleGenerateWithAi}
                           disabled={generatingWithAi}
                           style={{ ...aiButtonStyle, opacity: generatingWithAi ? 0.7 : 1 }}
@@ -905,7 +1060,7 @@ const AGView = () => {
 
                     {generatingWithAi && (
                       <div className="column is-full">
-                        <div className="notification is-info">
+                        <div className={`notification ${themeClass}`}>
                           <p style={{ marginBottom: '8px' }}>
                             <i className="fas fa-spinner fa-spin"></i> Generating assessment content...
                           </p>
@@ -970,7 +1125,7 @@ const AGView = () => {
                     )}
 
                     <div className="column is-full">
-                      <button type="button" className="button is-medium" onClick={resetCreateState} style={{ borderRadius: '6px', fontWeight: '600', backgroundColor: '#ffffff', border: '2px solid #3273dc', color: '#3273dc', display: 'flex', alignItems: 'center', gap: '8px', padding: '0.75rem 1.5rem' }}>
+                      <button type="button" className="button is-medium" onClick={resetCreateState} style={{ borderRadius: '6px', fontWeight: '600', backgroundColor: '#ffffff', border: '2px solid #3273dc', color: themeHex, display: 'flex', alignItems: 'center', gap: '8px', padding: '0.75rem 1.5rem' }}>
                         <i className="fas fa-times"></i><span>Cancel</span>
                       </button>
                     </div>
@@ -989,9 +1144,9 @@ const AGView = () => {
                         value={createForm.title}
                         onChange={handleCreateFormChange}
                         required
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-file-alt"></i>
                       </span>
                     </div>
@@ -1000,19 +1155,23 @@ const AGView = () => {
 
                 <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
                   <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter ID</label>
+                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter</label>
                     <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="chapter_id"
-                        placeholder="e.g., 1"
-                        value={createForm.chapter_id}
-                        onChange={handleCreateFormChange}
-                        required
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
-                      />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <div className="select is-fullwidth">
+                        <select
+                          name="chapter_id"
+                          value={createForm.chapter_id}
+                          onChange={handleCreateFormChange}
+                          required
+                          style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
+                        >
+                          <option value="">Select a Chapter</option>
+                          {chapters.map(chapter => (
+                            <option key={chapter.id || chapter.uid} value={chapter.id || chapter.uid}>{chapter.chapter_name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-layer-group"></i>
                       </span>
                     </div>
@@ -1021,19 +1180,23 @@ const AGView = () => {
 
                 <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
                   <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson ID</label>
+                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson</label>
                     <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="lesson_id"
-                        placeholder="e.g., 1"
-                        value={createForm.lesson_id}
-                        onChange={handleCreateFormChange}
-                        required
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
-                      />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <div className="select is-fullwidth">
+                        <select
+                          name="lesson_id"
+                          value={createForm.lesson_id}
+                          onChange={handleCreateFormChange}
+                          required
+                          style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
+                        >
+                          <option value="">Select a Lesson</option>
+                          {lessons.map(lesson => (
+                            <option key={lesson.id || lesson.uid} value={lesson.id || lesson.uid}>{lesson.title || lesson.lesson_name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-chalkboard"></i>
                       </span>
                     </div>
@@ -1052,9 +1215,9 @@ const AGView = () => {
                         value={createForm.mcq_batch}
                         onChange={handleCreateFormChange}
                         required
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-tasks"></i>
                       </span>
                     </div>
@@ -1074,8 +1237,7 @@ const AGView = () => {
                       true
                     )}
                     <button
-                      type="button"
-                      className="button is-info is-small"
+                      className={`button ${themeClass} is-small`}
                       onClick={addMcq}
                       style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
                     >
@@ -1112,7 +1274,7 @@ const AGView = () => {
                   <div className="field is-grouped">
                     <div className="control">
                       <button
-                        className="button is-success is-medium"
+                        className={`button ${themeClass} is-medium`}
                         type="submit"
                         disabled={creatingAssessment}
                         style={{
@@ -1139,7 +1301,7 @@ const AGView = () => {
                           fontWeight: '600',
                           backgroundColor: '#ffffff',
                           border: '2px solid #3273dc',
-                          color: '#3273dc',
+                          color: themeHex,
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
@@ -1160,7 +1322,7 @@ const AGView = () => {
         </div>
 
         {loading && (
-          <div className="notification is-info">
+          <div className={`notification ${themeClass}`}>
             <p>Loading assessments...</p>
           </div>
         )}
@@ -1204,7 +1366,7 @@ const AGView = () => {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                      <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                      <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                         <i className="fas fa-clipboard-list"></i>
                       </span>
                       <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50' }}>
@@ -1216,10 +1378,10 @@ const AGView = () => {
                         Assessment {assessment.assessment_id}
                       </span>
                       <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
-                        Chapter {assessment.chapter_id}
+                        Chapter: {assessment.chapter_name || assessment.chapter_id}
                       </span>
                       <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
-                        Lesson {assessment.lesson_id}
+                        Lesson: {assessment.lesson_name || assessment.lesson_id}
                       </span>
                       <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
                         Batch {assessment.mcq_batch}
@@ -1237,56 +1399,62 @@ const AGView = () => {
                         <i className={`fas fa-${assessment.published ? 'check-circle' : 'clock'}`}></i>
                         {assessment.published ? 'Published' : 'Draft'}
                       </span>
-                      <span className="tag is-info is-light" style={{ fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
-                        {assessment.mcq_pool?.length || 0} MCQs
-                      </span>
-                      <span className="tag is-success is-light" style={{ fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
-                        {assessment.answers_pool?.length || 0} Answers
-                      </span>
+                      <div className="tags" style={{ display: 'flex', gap: '10px' }}>
+                        <span className={`tag ${themeClass} is-light`} style={{ fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
+                          <i className="fas fa-graduation-cap" style={{ marginRight: '8px' }}></i> {assessment.mcq_pool?.length || 0} MCQs
+                        </span>
+                        <span className="tag is-success is-light" style={{ fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
+                          {assessment.answers_pool?.length || 0} Answers
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                      type="button"
-                      className="button is-large"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditAssessment(assessment)
-                      }}
-                      disabled={editingId !== null}
-                      style={getEditButtonStyle(editingId !== null)}
-                    >
-                      <i className="fas fa-edit"></i>
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="button is-large"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteAssessment(assessment.assessment_id)
-                      }}
-                      disabled={deletingId === assessment.assessment_id}
-                      style={{
-                        borderRadius: '6px',
-                        fontWeight: '600',
-                        backgroundColor: '#ffffff',
-                        border: '2px solid #f05149',
-                        color: '#f05149',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '0.75rem 1.5rem',
-                        opacity: deletingId === assessment.assessment_id ? 0.6 : 1
-                      }}
-                    >
-                      <i className="fas fa-trash"></i>
-                      <span>{deletingId === assessment.assessment_id ? 'Deleting...' : 'Delete'}</span>
-                    </button>
+                    {activeRole === 'Teacher' && (
+                      <>
+                        <button
+                          type="button"
+                          className="button is-large"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditAssessment(assessment)
+                          }}
+                          disabled={editingId !== null}
+                          style={getEditButtonStyle(editingId !== null)}
+                        >
+                          <i className="fas fa-edit"></i>
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="button is-large"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteAssessment(assessment.assessment_id)
+                          }}
+                          disabled={deletingId === assessment.assessment_id}
+                          style={{
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            backgroundColor: '#ffffff',
+                            border: '2px solid #f05149',
+                            color: '#f05149',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '0.75rem 1.5rem',
+                            opacity: deletingId === assessment.assessment_id ? 0.6 : 1
+                          }}
+                        >
+                          <i className="fas fa-trash"></i>
+                          <span>{deletingId === assessment.assessment_id ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      </>
+                    )}
                     <span
                       className="icon is-large"
                       style={{
-                        color: '#3273dc',
+                        color: themeHex,
                         transition: 'transform 0.3s ease',
                         transform: expandedId === assessment.assessment_id ? 'rotate(180deg)' : 'rotate(0deg)'
                       }}
@@ -1307,7 +1475,7 @@ const AGView = () => {
                         return (
                           <div key={index} style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8fafc' }}>
                             <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
-                              <span style={{ color: '#3273dc', fontWeight: 'bold', minWidth: '40px' }}>Q{index + 1}:</span>
+                              <span style={{ color: themeHex, fontWeight: 'bold', minWidth: '40px' }}>Q{index + 1}:</span>
                               <span style={{ color: '#2c3e50', lineHeight: '1.6' }}>{mcq.question}</span>
                             </p>
                             {mcq.options?.map((opt, optIndex) => (
@@ -1337,7 +1505,7 @@ const AGView = () => {
                       assessment.answers_pool.map((item, index) => (
                         <div key={index} style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#f0fff4' }}>
                           <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
-                            <span style={{ color: '#3273dc', fontWeight: 'bold', minWidth: '40px' }}>QUE:</span>
+                            <span style={{ color: themeHex, fontWeight: 'bold', minWidth: '40px' }}>QUE:</span>
                             <span style={{ color: '#2c3e50', lineHeight: '1.6' }}>{item.question}</span>
                           </p>
                           <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
@@ -1373,7 +1541,7 @@ const AGView = () => {
                                 value={editForm.title}
                                 onChange={handleEditFormChange}
                                 required
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
                             </div>
                           </div>
@@ -1390,7 +1558,7 @@ const AGView = () => {
                                 value={editForm.chapter_id}
                                 onChange={handleEditFormChange}
                                 required
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
                             </div>
                           </div>
@@ -1407,7 +1575,7 @@ const AGView = () => {
                                 value={editForm.lesson_id}
                                 onChange={handleEditFormChange}
                                 required
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
                             </div>
                           </div>
@@ -1424,7 +1592,7 @@ const AGView = () => {
                                 value={editForm.mcq_batch}
                                 onChange={handleEditFormChange}
                                 required
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
                             </div>
                           </div>
@@ -1506,7 +1674,7 @@ const AGView = () => {
                                   fontWeight: '600',
                                   backgroundColor: '#ffffff',
                                   border: '2px solid #3273dc',
-                                  color: '#3273dc',
+                                  color: themeHex,
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '8px',

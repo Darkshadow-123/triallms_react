@@ -1,13 +1,17 @@
+import { useContext } from 'react'
+import { RoleContext } from '../context/RoleContext'
+
 const CreateModeTabs = ({ activeTab, onTabChange }) => {
+  const { themeHex, themeLightHex } = useContext(RoleContext)
   const containerStyle = {
     display: 'flex',
     gap: '12px',
     marginBottom: '24px',
     padding: '8px',
-    backgroundColor: '#eff4fb',
+    backgroundColor: themeLightHex,
     borderRadius: '10px',
-    border: '1px solid rgba(50, 115, 220, 0.15)',
-    boxShadow: 'inset 0 1px 3px rgba(50, 115, 220, 0.08)'
+    border: '1px solid rgba(0, 0, 0, 0.15)',
+    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.08)'
   }
 
   const getTabStyle = (tab) => {
@@ -34,16 +38,16 @@ const CreateModeTabs = ({ activeTab, onTabChange }) => {
       return isActive
         ? {
             ...base,
-            backgroundColor: '#3273dc',
+            backgroundColor: themeHex,
             color: '#ffffff',
-            borderColor: '#3273dc',
-            boxShadow: '0 4px 14px rgba(50, 115, 220, 0.4)'
+            borderColor: themeHex,
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.2)'
           }
         : {
             ...base,
             backgroundColor: '#ffffff',
-            color: '#3273dc',
-            borderColor: '#3273dc'
+            color: themeHex,
+            borderColor: themeHex
           }
     }
 
@@ -66,10 +70,10 @@ const CreateModeTabs = ({ activeTab, onTabChange }) => {
   const handleMouseEnter = (e, tab) => {
     if (activeTab === tab) return
     const isManual = tab === 'manual'
-    e.currentTarget.style.backgroundColor = isManual ? '#3273dc' : '#7c3aed'
+    e.currentTarget.style.backgroundColor = isManual ? themeHex : '#7c3aed'
     e.currentTarget.style.color = '#ffffff'
     e.currentTarget.style.boxShadow = isManual
-      ? '0 4px 12px rgba(50, 115, 220, 0.3)'
+      ? '0 4px 12px rgba(0, 0, 0, 0.15)'
       : '0 4px 12px rgba(124, 58, 237, 0.3)'
   }
 
@@ -77,7 +81,7 @@ const CreateModeTabs = ({ activeTab, onTabChange }) => {
     if (activeTab === tab) return
     const isManual = tab === 'manual'
     e.currentTarget.style.backgroundColor = '#ffffff'
-    e.currentTarget.style.color = isManual ? '#3273dc' : '#7c3aed'
+    e.currentTarget.style.color = isManual ? themeHex : '#7c3aed'
     e.currentTarget.style.boxShadow = 'none'
   }
 

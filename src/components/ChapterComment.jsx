@@ -1,24 +1,28 @@
+import { useContext } from 'react'
+import { RoleContext } from '../context/RoleContext'
+
 const ChapterComment = ({ comment }) => {
+  const { themeHex, themeGradient } = useContext(RoleContext)
   return (
     <div
       style={{
-        background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-        borderLeft: '5px solid #3273dc',
-        boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)',
+        background: themeGradient,
+        borderLeft: `5px solid ${themeHex}`,
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
         borderRadius: '6px',
         padding: '16px',
         marginBottom: '12px',
         transition: 'all 0.3s ease'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(50, 115, 220, 0.2)'
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(50, 115, 220, 0.1)'
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-        <i className="fas fa-user-circle" style={{ fontSize: '20px', color: '#3273dc', marginTop: '4px', flexShrink: 0 }}></i>
+        <i className="fas fa-user-circle" style={{ fontSize: '20px', color: themeHex, marginTop: '4px', flexShrink: 0 }}></i>
         <div style={{ flex: '1' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <strong style={{ fontSize: '14px', color: '#2c3e50' }}>{comment.name}</strong>

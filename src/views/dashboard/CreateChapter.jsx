@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
 import axios from '../../api'
+import { RoleContext } from '../../context/RoleContext'
 
 const CreateChapter = () => {
+  const { themeClass, themeHex, themeGradient, themeLightHex, activeRole } = useContext(RoleContext)
   const [form, setForm] = useState({
     chapter_name: '',
     short_description: '',
@@ -72,9 +74,28 @@ const CreateChapter = () => {
     })
   }
 
+  if (activeRole === 'Student') {
+    return (
+      <div className="content-management">
+        <div className={`hero is-danger is-medium`}>
+          <div className="hero-body has-text-centered">
+            <h1 className="title">
+              <i className="fas fa-lock" style={{ marginRight: '10px' }}></i>
+              Access Denied
+            </h1>
+            <h2 className="subtitle" style={{ marginTop: '15px' }}>
+              Student accounts do not have permission to create content.
+            </h2>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="content-management">
-      <div className="hero is-info is-medium">
+      {/* Hero Section */}
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">Create Chapter</h1>
         </div>
@@ -87,13 +108,13 @@ const CreateChapter = () => {
             className="box" 
             style={{ 
               marginBottom: '30px',
-              background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-              borderLeft: '5px solid #3273dc',
+              background: themeGradient,
+              borderLeft: `5px solid ${themeHex}`,
               boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-              <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+              <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                 <i className="fas fa-graduation-cap"></i>
               </span>
               <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
@@ -108,7 +129,7 @@ const CreateChapter = () => {
                 Grades
               </label>
               <div className="control">
-                <div className="select is-multiple is-fullwidth" style={{ borderColor: '#3273dc', borderWidth: '1px' }}>
+                <div className="select is-multiple is-fullwidth" style={{ borderColor: themeHex, borderWidth: '1px' }}>
                   <select
                     size="6"
                     multiple
@@ -140,13 +161,13 @@ const CreateChapter = () => {
               className="box" 
               style={{ 
                 marginBottom: '30px',
-                background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                borderLeft: '5px solid #3273dc',
+                background: themeGradient,
+                borderLeft: `5px solid ${themeHex}`,
                 boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                   <i className="fas fa-book"></i>
                 </span>
                 <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
@@ -168,7 +189,7 @@ const CreateChapter = () => {
                         <select
                           value={form.subject}
                           onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                          style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                          style={{ borderColor: themeHex, borderWidth: '1px' }}
                         >
                           <option disabled value="">Select Subject</option>
                           {subjects.map(subject => (
@@ -178,7 +199,7 @@ const CreateChapter = () => {
                           ))}
                         </select>
                       </div>
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-tag"></i>
                       </span>
                     </div>
@@ -200,9 +221,9 @@ const CreateChapter = () => {
                         value={form.chapter_name}
                         onChange={(e) => setForm({ ...form, chapter_name: e.target.value })}
                         placeholder="e.g., Introduction to Physics"
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-book-open"></i>
                       </span>
                     </div>
@@ -223,7 +244,7 @@ const CreateChapter = () => {
                         value={form.short_description}
                         onChange={(e) => setForm({ ...form, short_description: e.target.value })}
                         placeholder="Brief description of this chapter..."
-                        style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '100px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '100px' }}
                       />
                     </div>
                   </div>
@@ -238,13 +259,13 @@ const CreateChapter = () => {
               className="box" 
               style={{ 
                 marginBottom: '30px',
-                background: 'linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)',
-                borderLeft: '5px solid #3273dc',
+                background: themeGradient,
+                borderLeft: `5px solid ${themeHex}`,
                 boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                   <i className="fas fa-list-ul"></i>
                 </span>
                 <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
@@ -264,7 +285,7 @@ const CreateChapter = () => {
                       }}
                     >
                       <h3 className="subtitle is-5" style={{ color: '#2c3e50', fontWeight: '600', marginBottom: '15px' }}>
-                        <i className="fas fa-graduation-cap" style={{ marginRight: '10px', color: '#3273dc' }}></i>
+                        <i className="fas fa-graduation-cap" style={{ marginRight: '10px', color: themeHex }}></i>
                         Lesson {index + 1}
                       </h3>
 
@@ -285,9 +306,9 @@ const CreateChapter = () => {
                                   setForm({ ...form, lessons: newLessons })
                                 }}
                                 placeholder="e.g., Newton's Laws"
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
-                              <span className="icon is-left" style={{ color: '#3273dc' }}>
+                              <span className="icon is-left" style={{ color: themeHex }}>
                                 <i className="fas fa-heading"></i>
                               </span>
                             </div>
@@ -309,7 +330,7 @@ const CreateChapter = () => {
                                   setForm({ ...form, lessons: newLessons })
                                 }}
                                 placeholder="Brief summary..."
-                                style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
                               />
                             </div>
                           </div>
@@ -330,7 +351,7 @@ const CreateChapter = () => {
                                   setForm({ ...form, lessons: newLessons })
                                 }}
                                 placeholder="Detailed lesson content..."
-                                style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '120px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '120px' }}
                               />
                             </div>
                           </div>
@@ -342,7 +363,7 @@ const CreateChapter = () => {
               )}
 
               <button 
-                className="button is-info is-medium"
+                className={`button ${themeClass} is-medium`}
                 onClick={addLesson}
                 style={{
                   borderRadius: '6px',
@@ -368,7 +389,7 @@ const CreateChapter = () => {
           <div className="field is-grouped" style={{ marginTop: '30px' }}>
             <div className="control">
               <button 
-                className="button is-success is-medium"
+                className={`button ${themeClass} is-medium`}
                 onClick={() => handleSubmit('draft')}
                 style={{
                   borderRadius: '6px',
@@ -390,7 +411,7 @@ const CreateChapter = () => {
             </div>
             <div className="control">
               <button 
-                className="button is-info is-medium"
+                className={`button ${themeClass} is-medium`}
                 onClick={() => handleSubmit('review')}
                 style={{
                   borderRadius: '6px',

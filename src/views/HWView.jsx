@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
+import axios from 'axios'
 import CreateModeTabs from '../components/CreateModeTabs'
+import { RoleContext } from '../context/RoleContext'
 
 const API_BASE = 'http://localhost:8001'
 
@@ -10,6 +12,7 @@ const parseApiError = (detail, fallback) => {
 }
 
 const HWView = () => {
+  const { themeClass , themeHex, activeRole } = useContext(RoleContext)
   const [homeworks, setHomeworks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -24,6 +27,14 @@ const HWView = () => {
   const [createTab, setCreateTab] = useState('manual')
   const [generatedPreview, setGeneratedPreview] = useState(null)
   const [activeGenerationGoal, setActiveGenerationGoal] = useState('')
+
+  const [grades, setGrades] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [chapters, setChapters] = useState([])
+  const [lessons, setLessons] = useState([])
+  
+  const [activeGrade, setActiveGrade] = useState('')
+  const [activeSubject, setActiveSubject] = useState('')
 
   const resetAiState = () => {
     setAiGoal('')
@@ -71,7 +82,47 @@ const HWView = () => {
 
   useEffect(() => {
     fetchHomeworks()
+    axios
+      .get('content_management/get_grades/')
+      .then(response => setGrades(response.data))
+      .catch(error => console.error('Error fetching grades:', error))
+      
+    axios
+      .get('content_management/subjects/')
+      .then(response => setSubjects(response.data))
+      .catch(error => console.error('Error fetching subjects:', error))
   }, [])
+
+  useEffect(() => {
+    if (!activeGrade && !activeSubject) return
+    let url = 'content_management/'
+    const queryParams = []
+    if (activeGrade) queryParams.push(`grade_id=${activeGrade}`)
+    if (activeSubject) queryParams.push(`subject_id=${activeSubject}`)
+    if (queryParams.length > 0) url += '?' + queryParams.join('&')
+
+    axios
+      .get(url)
+      .then(response => setChapters(response.data))
+      .catch(error => {
+        console.error('Error fetching chapters:', error)
+        setChapters([])
+      })
+  }, [activeGrade, activeSubject])
+
+  useEffect(() => {
+    if (createForm.chapter_id) {
+      axios
+        .get(`content_management/${createForm.chapter_id}/`)
+        .then(response => setLessons(response.data.lessons || []))
+        .catch(error => {
+          console.error('Error fetching lessons:', error)
+          setLessons([])
+        })
+    } else {
+      setLessons([])
+    }
+  }, [createForm.chapter_id])
 
   const fetchHomeworks = async (useFilters = false, silent = false) => {
     try {
@@ -152,13 +203,24 @@ const HWView = () => {
     setCreatingHomework(true)
     setError(null)
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
+    const payload = {
+      ...createForm,
+      chapter_id: safeExtractId(createForm.chapter_id),
+      lesson_id: safeExtractId(createForm.lesson_id)
+    }
+
     try {
       const response = await fetch(`${API_BASE}/create-homework`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(createForm)
+        body: JSON.stringify(payload)
       })
 
       if (!response.ok) {
@@ -195,11 +257,20 @@ const HWView = () => {
     setGeneratedPreview(null)
     setActiveGenerationGoal(aiGoal.trim())
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
     try {
       const response = await fetch(`${API_BASE}/homework/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal: aiGoal.trim() })
+        body: JSON.stringify({ 
+          goal: aiGoal.trim(),
+          chapter_id: safeExtractId(createForm.chapter_id),
+          lesson_id: safeExtractId(createForm.lesson_id)
+        })
       })
 
       if (!response.ok) {
@@ -309,13 +380,24 @@ const HWView = () => {
     setUpdatingHomework(true)
     setError(null)
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
+    const payload = {
+      ...editForm,
+      chapter_id: safeExtractId(editForm.chapter_id),
+      lesson_id: safeExtractId(editForm.lesson_id)
+    }
+
     try {
       const response = await fetch(`${API_BASE}/update-homework/${homeworkId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(payload)
       })
 
       if (!response.ok) {
@@ -386,7 +468,7 @@ const HWView = () => {
 
   return (
     <div className="homework-management">
-      <div className="hero is-info is-medium">
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">HomeWork Management</h1>
         </div>
@@ -404,12 +486,40 @@ const HWView = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-            <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+            <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
               <i className={`fas fa-${isCreateMode ? 'plus-circle' : 'filter'}`}></i>
             </span>
             <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50' }}>
               {isCreateMode ? 'Create Homework' : 'Search & Filter Homeworks'}
             </h2>
+          </div>
+          <div className="columns is-multiline mb-4">
+            <div className="column is-half">
+              <div className="field">
+                <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Select Grade (Filter Chapters)</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select value={activeGrade} onChange={e => setActiveGrade(e.target.value)} style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}>
+                      <option value="">All Grades</option>
+                      {grades.map(g => <option key={g.id || g.uid} value={g.id || g.uid}>Grade {g.grade}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="column is-half">
+              <div className="field">
+                <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Select Subject (Filter Chapters)</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select value={activeSubject} onChange={e => setActiveSubject(e.target.value)} style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}>
+                      <option value="">All Subjects</option>
+                      {subjects.map(s => <option key={s.id || s.uid} value={s.id || s.uid}>{s.subject_name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <form onSubmit={isCreateMode ? handleCreateHomework : handleSearch}>
@@ -432,9 +542,9 @@ const HWView = () => {
                         placeholder="e.g., 1"
                         value={filters.homework_id}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-book"></i>
                       </span>
                     </div>
@@ -457,9 +567,9 @@ const HWView = () => {
                         placeholder="e.g., Electromagnetism"
                         value={filters.title}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-file-alt"></i>
                       </span>
                     </div>
@@ -482,9 +592,9 @@ const HWView = () => {
                         placeholder="e.g., 1"
                         value={filters.chapter_id}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-layer-group"></i>
                       </span>
                     </div>
@@ -507,9 +617,9 @@ const HWView = () => {
                         placeholder="e.g., 1"
                         value={filters.lesson_id}
                         onChange={handleFilterChange}
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-chalkboard"></i>
                       </span>
                     </div>
@@ -530,14 +640,14 @@ const HWView = () => {
                           name="published"
                           value={filters.published}
                           onChange={handleFilterChange}
-                          style={{ borderColor: '#3273dc', borderWidth: '1px', color: '#2c3e50' }}
+                          style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
                         >
                           <option value="">All Status</option>
                           <option value="true">Published</option>
                           <option value="false">Draft</option>
                         </select>
                       </div>
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-bars"></i>
                       </span>
                     </div>
@@ -548,7 +658,7 @@ const HWView = () => {
                   <div className="field is-grouped">
                     <div className="control">
                       <button 
-                        className="button is-info is-medium" 
+                        className={`button ${themeClass} is-medium`} 
                         type="submit"
                         style={{ 
                           borderRadius: '6px',
@@ -561,8 +671,6 @@ const HWView = () => {
                           gap: '8px',
                           padding: '0.75rem 1.5rem'
                         }}
-                        onMouseEnter={(e) => e.target.style.boxShadow = '0 4px 12px rgba(50, 115, 220, 0.4)'}
-                        onMouseLeave={(e) => e.target.style.boxShadow = 'none'}
                       >
                         <i className="fas fa-search"></i>
                         <span>Search</span>
@@ -578,23 +686,13 @@ const HWView = () => {
                           fontWeight: '600',
                           backgroundColor: '#ffffff',
                           border: '2px solid #3273dc',
-                          color: '#3273dc',
+                          color: themeHex,
                           transition: 'all 0.3s ease',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '8px',
                           padding: '0.75rem 1.5rem'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#3273dc'
-                          e.target.style.color = '#ffffff'
-                          e.target.style.boxShadow = '0 4px 12px rgba(50, 115, 220, 0.3)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = '#ffffff'
-                          e.target.style.color = '#3273dc'
-                          e.target.style.boxShadow = 'none'
                         }}
                       >
                         <i className="fas fa-redo"></i>
@@ -602,31 +700,31 @@ const HWView = () => {
                       </button>
                     </div>
                     <div className="control">
-                      <button 
-                        className="button is-success is-medium" 
-                        type="button"
-                        onClick={() => {
-                          setIsCreateMode(true)
-                          setCreateTab('manual')
-                          resetAiState()
-                        }}
-                        style={{ 
-                          borderRadius: '6px',
-                          fontWeight: '600',
-                          transition: 'all 0.3s ease',
-                          border: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          padding: '0.75rem 1.5rem'
-                        }}
-                        onMouseEnter={(e) => e.target.style.boxShadow = '0 4px 12px rgba(72, 199, 116, 0.4)'}
-                        onMouseLeave={(e) => e.target.style.boxShadow = 'none'}
-                      >
-                        <i className="fas fa-plus"></i>
-                        <span>Create Homework</span>
-                      </button>
+                      {activeRole === 'Teacher' && (
+                        <button 
+                          className={`button ${themeClass} is-medium`} 
+                          type="button"
+                          onClick={() => {
+                            setIsCreateMode(true)
+                            setCreateTab('manual')
+                            resetAiState()
+                          }}
+                          style={{ 
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            transition: 'all 0.3s ease',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '0.75rem 1.5rem'
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                          <span>Create Homework</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -645,6 +743,53 @@ const HWView = () => {
                         <h4 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>
                           <i className="fas fa-robot"></i> AI Generation
                         </h4>
+
+                        <div className="columns is-multiline">
+                          <div className="column is-half">
+                            <div className="field">
+                              <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter</label>
+                              <div className="control has-icons-left">
+                                <div className="select is-fullwidth">
+                                  <select
+                                    name="chapter_id"
+                                    value={createForm.chapter_id}
+                                    onChange={handleCreateFormChange}
+                                    style={{ borderColor: '#7c3aed', borderWidth: '1px' }}
+                                  >
+                                    <option value="">Select Chapter</option>
+                                    {chapters.map(c => <option key={c.id || c.uid} value={c.id || c.uid}>{c.chapter_name}</option>)}
+                                  </select>
+                                </div>
+                                <span className="icon is-left" style={{ color: '#7c3aed' }}>
+                                  <i className="fas fa-layer-group"></i>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="column is-half">
+                            <div className="field">
+                              <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson</label>
+                              <div className="control has-icons-left">
+                                <div className="select is-fullwidth">
+                                  <select
+                                    name="lesson_id"
+                                    value={createForm.lesson_id}
+                                    onChange={handleCreateFormChange}
+                                    style={{ borderColor: '#7c3aed', borderWidth: '1px' }}
+                                  >
+                                    <option value="">Select Lesson</option>
+                                    {lessons.map(l => <option key={l.id || l.uid} value={l.id || l.uid}>{l.lesson_name}</option>)}
+                                  </select>
+                                </div>
+                                <span className="icon is-left" style={{ color: '#7c3aed' }}>
+                                  <i className="fas fa-chalkboard"></i>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="field">
                           <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Goal</label>
                           <div className="control">
@@ -673,7 +818,7 @@ const HWView = () => {
 
                     {generatingWithAi && (
                       <div className="column is-full">
-                        <div className="notification is-info">
+                        <div className={`notification ${themeClass}`}>
                           <p style={{ marginBottom: '8px' }}>
                             <i className="fas fa-spinner fa-spin"></i> Generating homework content...
                           </p>
@@ -708,7 +853,7 @@ const HWView = () => {
                                           value={editForm.title}
                                           onChange={handleEditFormChange}
                                           required
-                                          style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                          style={{ borderColor: themeHex, borderWidth: '1px' }}
                                         />
                                       </div>
                                     </div>
@@ -726,7 +871,7 @@ const HWView = () => {
                                           value={editForm.chapter_id}
                                           onChange={handleEditFormChange}
                                           required
-                                          style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                          style={{ borderColor: themeHex, borderWidth: '1px' }}
                                         />
                                       </div>
                                     </div>
@@ -744,7 +889,7 @@ const HWView = () => {
                                           value={editForm.lesson_id}
                                           onChange={handleEditFormChange}
                                           required
-                                          style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                          style={{ borderColor: themeHex, borderWidth: '1px' }}
                                         />
                                       </div>
                                     </div>
@@ -765,7 +910,7 @@ const HWView = () => {
                                               value={q.question}
                                               onChange={(e) => handleEditQuestionChange(index, 'question', e.target.value)}
                                               required
-                                              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                                              style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
                                             />
                                           </div>
                                         </div>
@@ -776,7 +921,7 @@ const HWView = () => {
                                               placeholder="Enter answer (optional)..."
                                               value={q.answer}
                                               onChange={(e) => handleEditQuestionChange(index, 'answer', e.target.value)}
-                                              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                                              style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
                                             />
                                           </div>
                                         </div>
@@ -819,7 +964,7 @@ const HWView = () => {
                                             fontWeight: '600',
                                             backgroundColor: '#ffffff',
                                             border: '2px solid #3273dc',
-                                            color: '#3273dc',
+                                            color: themeHex,
                                             transition: 'all 0.3s ease',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -850,8 +995,8 @@ const HWView = () => {
                               </p>
                               <p style={{ marginBottom: '15px' }}>
                                 <strong>Homework ID:</strong> {generatedPreview.homework_id ?? '-'} |{' '}
-                                <strong>Chapter:</strong> {generatedPreview.chapter_id} |{' '}
-                                <strong>Lesson:</strong> {generatedPreview.lesson_id}
+                                <strong>Chapter:</strong> {generatedPreview.chapter_name || generatedPreview.chapter_id} |{' '}
+                                <strong>Lesson:</strong> {generatedPreview.lesson_name || generatedPreview.lesson_id}
                               </p>
                               <h5 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '10px' }}>Questions</h5>
                               {generatedPreview.homework_questions?.map((q, index) => (
@@ -877,7 +1022,7 @@ const HWView = () => {
                     )}
 
                     <div className="column is-full">
-                      <button type="button" className="button is-medium" onClick={resetCreateState} style={{ borderRadius: '6px', fontWeight: '600', backgroundColor: '#ffffff', border: '2px solid #3273dc', color: '#3273dc', display: 'flex', alignItems: 'center', gap: '8px', padding: '0.75rem 1.5rem' }}>
+                      <button type="button" className="button is-medium" onClick={resetCreateState} style={{ borderRadius: '6px', fontWeight: '600', backgroundColor: '#ffffff', border: '2px solid #3273dc', color: themeHex, display: 'flex', alignItems: 'center', gap: '8px', padding: '0.75rem 1.5rem' }}>
                         <i className="fas fa-times"></i><span>Cancel</span>
                       </button>
                     </div>
@@ -901,9 +1046,9 @@ const HWView = () => {
                         value={createForm.title}
                         onChange={handleCreateFormChange}
                         required
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                        style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-file-alt"></i>
                       </span>
                     </div>
@@ -916,20 +1061,22 @@ const HWView = () => {
                       <span className="icon is-small" style={{ marginRight: '5px' }}>
                         <i className="fas fa-bookmark"></i>
                       </span>
-                      Chapter ID
+                      Chapter
                     </label>
                     <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="chapter_id"
-                        placeholder="e.g., 1"
-                        value={createForm.chapter_id}
-                        onChange={handleCreateFormChange}
-                        required
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
-                      />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <div className="select is-fullwidth">
+                        <select
+                          name="chapter_id"
+                          value={createForm.chapter_id}
+                          onChange={handleCreateFormChange}
+                          required
+                          style={{ borderColor: themeHex, borderWidth: '1px' }}
+                        >
+                          <option value="">Select Chapter</option>
+                          {chapters.map(c => <option key={c.id || c.uid} value={c.id || c.uid}>{c.chapter_name}</option>)}
+                        </select>
+                      </div>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-layer-group"></i>
                       </span>
                     </div>
@@ -942,20 +1089,22 @@ const HWView = () => {
                       <span className="icon is-small" style={{ marginRight: '5px' }}>
                         <i className="fas fa-graduation-cap"></i>
                       </span>
-                      Lesson ID
+                      Lesson
                     </label>
                     <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="lesson_id"
-                        placeholder="e.g., 1"
-                        value={createForm.lesson_id}
-                        onChange={handleCreateFormChange}
-                        required
-                        style={{ borderColor: '#3273dc', borderWidth: '1px' }}
-                      />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <div className="select is-fullwidth">
+                        <select
+                          name="lesson_id"
+                          value={createForm.lesson_id}
+                          onChange={handleCreateFormChange}
+                          required
+                          style={{ borderColor: themeHex, borderWidth: '1px' }}
+                        >
+                          <option value="">Select Lesson</option>
+                          {lessons.map(l => <option key={l.id || l.uid} value={l.id || l.uid}>{l.lesson_name}</option>)}
+                        </select>
+                      </div>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-chalkboard"></i>
                       </span>
                     </div>
@@ -978,7 +1127,7 @@ const HWView = () => {
                               value={q.question}
                               onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
                               required
-                              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                              style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
                             />
                           </div>
                         </div>
@@ -989,7 +1138,7 @@ const HWView = () => {
                               placeholder="Enter answer (optional)..."
                               value={q.answer}
                               onChange={(e) => handleQuestionChange(index, 'answer', e.target.value)}
-                              style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                              style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
                             />
                           </div>
                         </div>
@@ -1008,7 +1157,7 @@ const HWView = () => {
                     ))}
                     <button
                       type="button"
-                      className="button is-info is-small"
+                      className={`button ${themeClass} is-small`}
                       onClick={addQuestion}
                       style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
                     >
@@ -1022,7 +1171,7 @@ const HWView = () => {
                   <div className="field is-grouped">
                     <div className="control">
                       <button 
-                        className="button is-success is-medium" 
+                        className={`button ${themeClass} is-medium`} 
                         type="submit"
                         disabled={creatingHomework}
                         style={{ 
@@ -1036,8 +1185,6 @@ const HWView = () => {
                           gap: '8px',
                           padding: '0.75rem 1.5rem'
                         }}
-                        onMouseEnter={(e) => !creatingHomework && (e.target.style.boxShadow = '0 4px 12px rgba(72, 199, 116, 0.4)')}
-                        onMouseLeave={(e) => !creatingHomework && (e.target.style.boxShadow = 'none')}
                       >
                         <i className="fas fa-save"></i>
                         <span>{creatingHomework ? 'Creating...' : 'Create Homework'}</span>
@@ -1053,23 +1200,13 @@ const HWView = () => {
                           fontWeight: '600',
                           backgroundColor: '#ffffff',
                           border: '2px solid #3273dc',
-                          color: '#3273dc',
+                          color: themeHex,
                           transition: 'all 0.3s ease',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '8px',
                           padding: '0.75rem 1.5rem'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#3273dc'
-                          e.target.style.color = '#ffffff'
-                          e.target.style.boxShadow = '0 4px 12px rgba(50, 115, 220, 0.3)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = '#ffffff'
-                          e.target.style.color = '#3273dc'
-                          e.target.style.boxShadow = 'none'
                         }}
                       >
                         <i className="fas fa-times"></i>
@@ -1086,7 +1223,7 @@ const HWView = () => {
         </div>
 
         {loading && (
-          <div className="notification is-info">
+          <div className={`notification ${themeClass}`}>
             <p>Loading homeworks...</p>
           </div>
         )}
@@ -1139,7 +1276,7 @@ const HWView = () => {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                      <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                      <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                         <i className="fas fa-book-open"></i>
                       </span>
                       <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50' }}>
@@ -1151,10 +1288,10 @@ const HWView = () => {
                         Homework {homework.homework_id}
                       </span>
                       <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
-                        Chapter {homework.chapter_id}
+                        {homework.chapter_name || `Chapter ${homework.chapter_id}`}
                       </span>
                       <span className="tag is-light" style={{ backgroundColor: '#eff4fb', color: '#2c3e50', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
-                        Lesson {homework.lesson_id}
+                        {homework.lesson_name || `Lesson ${homework.lesson_id}`}
                       </span>
                       <span 
                         className={`tag ${homework.published ? 'is-success' : 'is-warning'}`}
@@ -1172,63 +1309,67 @@ const HWView = () => {
                         <i className={`fas fa-${homework.published ? 'check-circle' : 'clock'}`}></i>
                         {homework.published ? 'Published' : 'Draft'}
                       </span>
-                      <span className="tag is-info is-light" style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
+                      <span className={`tag ${themeClass} is-light`} style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', fontSize: '15px' }}>
                         {homework.homework_questions?.length || 0} Questions
                       </span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                      type="button"
-                      className="button is-large"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditHomework(homework)
-                      }}
-                      disabled={editingId !== null}
-                      title="Edit this homework"
-                      style={getEditButtonStyle(editingId !== null)}
-                      onMouseEnter={(e) => editingId === null && (e.target.style.boxShadow = '0 4px 12px rgba(72, 199, 116, 0.4)')}
-                      onMouseLeave={(e) => (e.target.style.boxShadow = 'none')}
-                    >
-                      <i className="fas fa-edit"></i>
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="button is-large"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteHomework(homework.homework_id)
-                      }}
-                      disabled={deletingId === homework.homework_id}
-                      title="Delete this homework"
-                      style={{
-                        borderRadius: '6px',
-                        fontWeight: '600',
-                        backgroundColor: '#ffffff',
-                        border: '2px solid #f05149',
-                        color: '#f05149',
-                        transition: 'all 0.3s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        padding: '0.75rem 1.5rem',
-                        opacity: deletingId === homework.homework_id ? 0.6 : 1
-                      }}
-                      onMouseEnter={(e) => {
-                        if (deletingId !== homework.homework_id) {
-                          e.target.style.boxShadow = '0 4px 12px rgba(240, 81, 73, 0.4)'                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.boxShadow = 'none'
-                      }}
-                    >
-                      <i className="fas fa-trash"></i>
-                      <span>{deletingId === homework.homework_id ? 'Deleting...' : 'Delete'}</span>
-                    </button>
-                    <span className="icon is-large" style={{ color: '#3273dc', transition: 'transform 0.3s ease', transform: expandedId === homework.homework_id ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    {activeRole === 'Teacher' && (
+                      <>
+                        <button
+                          type="button"
+                          className="button is-large"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditHomework(homework)
+                          }}
+                          disabled={editingId !== null}
+                          title="Edit this homework"
+                          style={getEditButtonStyle(editingId !== null)}
+                          onMouseEnter={(e) => editingId === null && (e.target.style.boxShadow = '0 4px 12px rgba(72, 199, 116, 0.4)')}
+                          onMouseLeave={(e) => (e.target.style.boxShadow = 'none')}
+                        >
+                          <i className="fas fa-edit"></i>
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="button is-large"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteHomework(homework.homework_id)
+                          }}
+                          disabled={deletingId === homework.homework_id}
+                          title="Delete this homework"
+                          style={{
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            backgroundColor: '#ffffff',
+                            border: '2px solid #f05149',
+                            color: '#f05149',
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '0.75rem 1.5rem',
+                            opacity: deletingId === homework.homework_id ? 0.6 : 1
+                          }}
+                          onMouseEnter={(e) => {
+                            if (deletingId !== homework.homework_id) {
+                              e.target.style.boxShadow = '0 4px 12px rgba(240, 81, 73, 0.4)'                        }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.boxShadow = 'none'
+                          }}
+                        >
+                          <i className="fas fa-trash"></i>
+                          <span>{deletingId === homework.homework_id ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      </>
+                    )}
+                    <span className="icon is-large" style={{ color: themeHex, transition: 'transform 0.3s ease', transform: expandedId === homework.homework_id ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                       <i className="fas fa-chevron-down"></i>
                     </span>
                   </div>
@@ -1237,7 +1378,7 @@ const HWView = () => {
                 {expandedId === homework.homework_id && editingId !== homework.homework_id && (
                   <div className="homework-content" style={{ marginTop: '20px', paddingTop: '20px' }}>
                     <h3 className="subtitle is-5" style={{ color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                      <span className="icon" style={{ color: '#3273dc' }}>
+                      <span className="icon" style={{ color: themeHex }}>
                         <i className="fas fa-list-ul"></i>
                       </span>
                       Questions & Answers
@@ -1254,7 +1395,7 @@ const HWView = () => {
                             }}
                           >
                             <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
-                              <span style={{ color: '#3273dc', fontWeight: 'bold', minWidth: '30px', marginTop: '2px' }}>
+                              <span style={{ color: themeHex, fontWeight: 'bold', minWidth: '30px', marginTop: '2px' }}>
                                 QUE:
                               </span>
                               <span className="is-size-6" style={{ color: '#2c3e50', lineHeight: '1.6' }}>
@@ -1304,7 +1445,7 @@ const HWView = () => {
                                 value={editForm.title}
                                 onChange={handleEditFormChange}
                                 required
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
                             </div>
                           </div>
@@ -1324,7 +1465,7 @@ const HWView = () => {
                                 value={editForm.chapter_id}
                                 onChange={handleEditFormChange}
                                 required
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
                             </div>
                           </div>
@@ -1344,7 +1485,7 @@ const HWView = () => {
                                 value={editForm.lesson_id}
                                 onChange={handleEditFormChange}
                                 required
-                                style={{ borderColor: '#3273dc', borderWidth: '1px' }}
+                                style={{ borderColor: themeHex, borderWidth: '1px' }}
                               />
                             </div>
                           </div>
@@ -1365,7 +1506,7 @@ const HWView = () => {
                                     value={q.question}
                                     onChange={(e) => handleEditQuestionChange(index, 'question', e.target.value)}
                                     required
-                                    style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                                    style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
                                   />
                                 </div>
                               </div>
@@ -1376,7 +1517,7 @@ const HWView = () => {
                                     placeholder="Enter answer (optional)..."
                                     value={q.answer}
                                     onChange={(e) => handleEditQuestionChange(index, 'answer', e.target.value)}
-                                    style={{ borderColor: '#3273dc', borderWidth: '1px', minHeight: '80px' }}
+                                    style={{ borderColor: themeHex, borderWidth: '1px', minHeight: '80px' }}
                                   />
                                 </div>
                               </div>
@@ -1421,7 +1562,7 @@ const HWView = () => {
                                   fontWeight: '600',
                                   backgroundColor: '#ffffff',
                                   border: '2px solid #3273dc',
-                                  color: '#3273dc',
+                                  color: themeHex,
                                   transition: 'all 0.3s ease',
                                   display: 'flex',
                                   alignItems: 'center',

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
 import axios from '../api'
 import ChapterItem from '../components/ChapterItem'
+import { RoleContext } from '../context/RoleContext'
 
 const HomeView = () => {
+  const { themeClass } = useContext(RoleContext)
   const [chapters, setChapters] = useState([])
 
   useEffect(() => {
@@ -17,7 +19,7 @@ const HomeView = () => {
 
   return (
     <div className="home">
-      <div className="hero is-info is-medium">
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">Welcome to VerityLMS</h1>
         </div>
@@ -66,7 +68,7 @@ const HomeView = () => {
             <hr />
 
             {chapters.map(chapter => (
-              <div key={chapter.id} className="column is-4">
+              <div key={chapter.id || chapter.uid} className="column is-4">
                 <ChapterItem chapter={chapter} />
               </div>
             ))}

@@ -1,3 +1,13 @@
 /node_modules
 /VerityLMS-main
 .env
+/fastapi
+extract.cjs
+extract.js
+mock_data.json
+mock_export.cjs
+mock_exporter.cjs
+refactor_create_chapter.cjs
+refactor_views.cjs
+run_ext.cjs
+write_run_ext.cjs

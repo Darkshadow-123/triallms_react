@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import {
   BarChart,
   Bar,
@@ -19,8 +19,9 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts'
+import { RoleContext } from '../context/RoleContext'
 
-const COLORS = ['#3273dc', '#48c774', '#ffdd57', '#f14668', '#b86bff', '#7a7d85']
+// Colors will be generated inside the component based on themeHex
 
 const buildPieLabel = (entry) => {
   if (entry.subjectBreakdown) {
@@ -30,6 +31,8 @@ const buildPieLabel = (entry) => {
 }
 
 const StudentPerformanceAnalytics = () => {
+  const { themeClass, themeHex } = useContext(RoleContext)
+  const COLORS = [themeHex, '#48c774', '#ffdd57', '#f14668', '#b86bff', '#7a7d85']
   const [school, setSchool] = useState('')
   const [grade, setGrade] = useState('')
   const [studentId, setStudentId] = useState('')
@@ -185,7 +188,7 @@ const StudentPerformanceAnalytics = () => {
 
   return (
     <div className="performance-analytics">
-      <div className="hero is-info is-medium">
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">Student Performance Analytics</h1>
           <p className="subtitle">Live metrics powered by MongoDB analytics</p>
@@ -253,20 +256,24 @@ const StudentPerformanceAnalytics = () => {
                 </div>
               </div>
 
-              <div className="column is-2 is-flex is-align-items-flex-end">
-                <button type="submit" className="button is-primary is-fullwidth">
-                  Refresh
+              <div className="control" style={{ flex: '0 0 auto' }}>
+                <button type="submit" className={`button ${themeClass} is-fullwidth`}>
+                  Generate Report
                 </button>
               </div>
             </div>
           </form>
 
           {loadingOptions && (
-            <div className="notification is-info">Loading dropdown options...</div>
+            <div className="column is-12">
+              <div className={`notification ${themeClass}`}>Loading dropdown options...</div>
+            </div>
           )}
 
           {loading && (
-            <div className="notification is-info">Loading analytics data...</div>
+            <div className="column is-12">
+              <div className={`notification ${themeClass}`}>Loading analytics data...</div>
+            </div>
           )}
 
           {error && (
@@ -322,7 +329,7 @@ const StudentPerformanceAnalytics = () => {
                         <YAxis domain={[0, 100]} />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="avgScore" fill="#3273dc" name="Average Score" />
+                        <Bar dataKey="avgScore" fill={themeHex} name="Average Score" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -415,7 +422,7 @@ const StudentPerformanceAnalytics = () => {
                         <XAxis dataKey="name" />
                         <YAxis domain={[0, 100]} />
                         <Tooltip />
-                        <Line type="monotone" dataKey="value" stroke="#3273dc" strokeWidth={3} name="Average" />
+                        <Line type="monotone" dataKey="value" stroke={themeHex} strokeWidth={3} name="Average" />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>

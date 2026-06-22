@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import { useContext, useState, useEffect } from 'react'
-import { AuthContext } from '../context/AuthContext'
+import { useState, useEffect, useContext } from 'react'
+import { RoleContext } from '../context/RoleContext'
 
 const Nav = () => {
-  const { user } = useContext(AuthContext)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { activeRole, setActiveRole, themeClass } = useContext(RoleContext)
 
   // Close mobile menu when window is resized to desktop width
   useEffect(() => {
@@ -44,7 +44,9 @@ const Nav = () => {
             <div className="navbar-dropdown">
               <Link to="/content-Generation" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Generation</Link>
               <Link to="/content-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>View Content</Link>
-              <Link to="/dashboard/create-chapter" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Create Content</Link>
+              {activeRole === 'Teacher' && (
+                <Link to="/dashboard/create-chapter" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Create Content</Link>
+              )}
             </div>
           </div>
 
@@ -56,13 +58,7 @@ const Nav = () => {
             </div>
           </div>
 
-          <div className="navbar-item has-dropdown is-hoverable">
-            <a className="navbar-link">Analytics</a>
-            <div className="navbar-dropdown">
-              <Link to="/performance-&-analytics" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Student Performance</Link>
-              <Link to="/class-performance-analytics" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Class Performance</Link>
-            </div>
-          </div>
+          <Link to="/performance-&-analytics" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Analytics</Link>
 
           <Link to="/homework-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Homework</Link>
           <Link to="/notes-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Notes</Link>
@@ -71,14 +67,25 @@ const Nav = () => {
         <div className="navbar-end">
           <div className="navbar-item">
             <div className="buttons">
-              {user.isAuthenticated ? (
-                <Link to="/dashboard/my-account" className="button is-info" onClick={() => setIsMobileMenuOpen(false)}>My Account</Link>
-              ) : (
-                <>
-                  <Link to="/sign-up" className="button is-primary" onClick={() => setIsMobileMenuOpen(false)}><strong>Sign Up</strong></Link>
-                  <Link to="/log-in" className="button is-light" onClick={() => setIsMobileMenuOpen(false)}>Log in</Link>
-                </>
-              )}
+              {/* Role Switch */}
+              <button 
+                className={`button ${themeClass} ${activeRole === 'Student' ? '' : 'is-light'}`}
+                onClick={() => setActiveRole('Student')}
+              >
+                <span className="icon is-small"><i className="fas fa-user-graduate"></i></span>
+                <span>Student</span>
+              </button>
+              
+              <button 
+                className={`button ${themeClass} ${activeRole === 'Teacher' ? '' : 'is-light'}`}
+                onClick={() => setActiveRole('Teacher')}
+              >
+                <span className="icon is-small"><i className="fas fa-chalkboard-teacher"></i></span>
+                <span>Teacher</span>
+              </button>
+
+              {/* Existing Account Button */}
+              <Link to="/dashboard/my-account" className={`button ${themeClass}`} onClick={() => setIsMobileMenuOpen(false)}>My Account</Link>
             </div>
           </div>
         </div>

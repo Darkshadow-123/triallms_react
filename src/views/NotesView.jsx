@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
+import axios from 'axios'
 import CreateModeTabs from '../components/CreateModeTabs'
+import { RoleContext } from '../context/RoleContext'
 
 const API_BASE = 'http://localhost:8001'
 
@@ -10,6 +12,7 @@ const parseApiError = (detail, fallback) => {
 }
 
 const NotesView = () => {
+  const { themeClass , themeHex, activeRole } = useContext(RoleContext)
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -24,6 +27,14 @@ const NotesView = () => {
   const [createTab, setCreateTab] = useState('manual')
   const [generatedPreview, setGeneratedPreview] = useState(null)
   const [activeGenerationGoal, setActiveGenerationGoal] = useState('')
+
+  const [grades, setGrades] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [chapters, setChapters] = useState([])
+  const [lessons, setLessons] = useState([])
+  
+  const [activeGrade, setActiveGrade] = useState('')
+  const [activeSubject, setActiveSubject] = useState('')
 
   const resetAiState = () => {
     setAiGoal('')
@@ -62,7 +73,47 @@ const NotesView = () => {
 
   useEffect(() => {
     fetchNotes()
+    axios
+      .get('content_management/get_grades/')
+      .then(response => setGrades(response.data))
+      .catch(error => console.error('Error fetching grades:', error))
+      
+    axios
+      .get('content_management/subjects/')
+      .then(response => setSubjects(response.data))
+      .catch(error => console.error('Error fetching subjects:', error))
   }, [])
+
+  useEffect(() => {
+    if (!activeGrade && !activeSubject) return
+    let url = 'content_management/'
+    const queryParams = []
+    if (activeGrade) queryParams.push(`grade_id=${activeGrade}`)
+    if (activeSubject) queryParams.push(`subject_id=${activeSubject}`)
+    if (queryParams.length > 0) url += '?' + queryParams.join('&')
+
+    axios
+      .get(url)
+      .then(response => setChapters(response.data))
+      .catch(error => {
+        console.error('Error fetching chapters:', error)
+        setChapters([])
+      })
+  }, [activeGrade, activeSubject])
+
+  useEffect(() => {
+    if (createForm.chapter_id) {
+      axios
+        .get(`content_management/${createForm.chapter_id}/`)
+        .then(response => setLessons(response.data.lessons || []))
+        .catch(error => {
+          console.error('Error fetching lessons:', error)
+          setLessons([])
+        })
+    } else {
+      setLessons([])
+    }
+  }, [createForm.chapter_id])
 
   const fetchNotes = async (useFilters = false, silent = false) => {
     try {
@@ -131,10 +182,15 @@ const NotesView = () => {
     setCreatingNote(true)
     setError(null)
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
     const payload = {
       title: createForm.title,
-      chapter_id: parseInt(createForm.chapter_id, 10),
-      lesson_id: parseInt(createForm.lesson_id, 10),
+      chapter_id: safeExtractId(createForm.chapter_id),
+      lesson_id: safeExtractId(createForm.lesson_id),
       content: createForm.content
     }
 
@@ -172,11 +228,20 @@ const NotesView = () => {
     setGeneratedPreview(null)
     setActiveGenerationGoal(aiGoal.trim())
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
     try {
       const response = await fetch(`${API_BASE}/notes/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal: aiGoal.trim() })
+        body: JSON.stringify({ 
+          goal: aiGoal.trim(),
+          chapter_id: safeExtractId(createForm.chapter_id),
+          lesson_id: safeExtractId(createForm.lesson_id)
+        })
       })
 
       if (!response.ok) {
@@ -262,10 +327,15 @@ const NotesView = () => {
     setUpdatingNote(true)
     setError(null)
 
+    const safeExtractId = (uid) => {
+      const digits = String(uid).replace(/\D/g, '')
+      return parseInt(digits.substring(0, 12), 10) || 1
+    }
+
     const payload = {
       title: editForm.title,
-      chapter_id: editForm.chapter_id,
-      lesson_id: editForm.lesson_id,
+      chapter_id: safeExtractId(editForm.chapter_id),
+      lesson_id: safeExtractId(editForm.lesson_id),
       content: editForm.content,
       published: editForm.published
     }
@@ -323,7 +393,7 @@ const NotesView = () => {
     boxShadow: '0 2px 8px rgba(50, 115, 220, 0.1)'
   }
 
-  const inputStyle = { borderColor: '#3273dc', borderWidth: '1px' }
+  const inputStyle = { borderColor: themeHex, borderWidth: '1px' }
 
   const aiButtonStyle = {
     borderRadius: '6px',
@@ -358,7 +428,7 @@ const NotesView = () => {
 
   return (
     <div className="notes-management">
-      <div className="hero is-info is-medium">
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">Notes Management</h1>
         </div>
@@ -367,12 +437,41 @@ const NotesView = () => {
       <section className="section">
         <div className="box" style={boxStyle}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-            <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+            <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
               <i className={`fas fa-${isCreateMode ? 'plus-circle' : 'filter'}`}></i>
             </span>
             <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50' }}>
               {isCreateMode ? 'Create Note' : 'Search & Filter Notes'}
             </h2>
+          </div>
+
+          <div className="columns is-multiline mb-4">
+            <div className="column is-half">
+              <div className="field">
+                <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Select Grade (Filter Chapters)</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select value={activeGrade} onChange={e => setActiveGrade(e.target.value)} style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}>
+                      <option value="">All Grades</option>
+                      {grades.map(g => <option key={g.id || g.uid} value={g.id || g.uid}>Grade {g.grade}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="column is-half">
+              <div className="field">
+                <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Select Subject (Filter Chapters)</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select value={activeSubject} onChange={e => setActiveSubject(e.target.value)} style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}>
+                      <option value="">All Subjects</option>
+                      {subjects.map(s => <option key={s.id || s.uid} value={s.id || s.uid}>{s.subject_name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <form onSubmit={isCreateMode ? handleCreateNote : handleSearch}>
@@ -396,7 +495,7 @@ const NotesView = () => {
                         onChange={handleFilterChange}
                         style={inputStyle}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-sticky-note"></i>
                       </span>
                     </div>
@@ -421,7 +520,7 @@ const NotesView = () => {
                         onChange={handleFilterChange}
                         style={inputStyle}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-file-alt"></i>
                       </span>
                     </div>
@@ -446,7 +545,7 @@ const NotesView = () => {
                         onChange={handleFilterChange}
                         style={inputStyle}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-layer-group"></i>
                       </span>
                     </div>
@@ -457,7 +556,7 @@ const NotesView = () => {
                   <div className="field is-grouped">
                     <div className="control">
                       <button
-                        className="button is-info is-medium"
+                        className={`button ${themeClass} is-medium`}
                         type="submit"
                         style={{
                           borderRadius: '6px',
@@ -483,7 +582,7 @@ const NotesView = () => {
                           fontWeight: '600',
                           backgroundColor: '#ffffff',
                           border: '2px solid #3273dc',
-                          color: '#3273dc',
+                          color: themeHex,
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
@@ -495,27 +594,29 @@ const NotesView = () => {
                       </button>
                     </div>
                     <div className="control">
-                      <button
-                        className="button is-success is-medium"
-                        type="button"
-                        onClick={() => {
-                          setIsCreateMode(true)
-                          setCreateTab('manual')
-                          resetAiState()
-                        }}
-                        style={{
-                          borderRadius: '6px',
-                          fontWeight: '600',
-                          border: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '0.75rem 1.5rem'
-                        }}
-                      >
-                        <i className="fas fa-plus"></i>
-                        <span>Create Note</span>
-                      </button>
+                      {activeRole === 'Teacher' && (
+                        <button
+                          className={`button ${themeClass} is-medium`}
+                          type="button"
+                          onClick={() => {
+                            setIsCreateMode(true)
+                            setCreateTab('manual')
+                            resetAiState()
+                          }}
+                          style={{
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '0.75rem 1.5rem'
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                          <span>Create Note</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -536,6 +637,53 @@ const NotesView = () => {
                         <h4 className="subtitle is-6" style={{ color: '#2c3e50', marginBottom: '15px' }}>
                           <i className="fas fa-robot"></i> AI Generation
                         </h4>
+
+                        <div className="columns is-multiline">
+                          <div className="column is-half">
+                            <div className="field">
+                              <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter</label>
+                              <div className="control has-icons-left">
+                                <div className="select is-fullwidth">
+                                  <select
+                                    name="chapter_id"
+                                    value={createForm.chapter_id}
+                                    onChange={handleCreateFormChange}
+                                    style={{ borderColor: '#7c3aed', borderWidth: '1px' }}
+                                  >
+                                    <option value="">Select Chapter</option>
+                                    {chapters.map(c => <option key={c.id || c.uid} value={c.id || c.uid}>{c.chapter_name}</option>)}
+                                  </select>
+                                </div>
+                                <span className="icon is-left" style={{ color: '#7c3aed' }}>
+                                  <i className="fas fa-layer-group"></i>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="column is-half">
+                            <div className="field">
+                              <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson</label>
+                              <div className="control has-icons-left">
+                                <div className="select is-fullwidth">
+                                  <select
+                                    name="lesson_id"
+                                    value={createForm.lesson_id}
+                                    onChange={handleCreateFormChange}
+                                    style={{ borderColor: '#7c3aed', borderWidth: '1px' }}
+                                  >
+                                    <option value="">Select Lesson</option>
+                                    {lessons.map(l => <option key={l.id || l.uid} value={l.id || l.uid}>{l.lesson_name}</option>)}
+                                  </select>
+                                </div>
+                                <span className="icon is-left" style={{ color: '#7c3aed' }}>
+                                  <i className="fas fa-chalkboard"></i>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="field">
                           <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Goal</label>
                           <div className="control">
@@ -564,7 +712,7 @@ const NotesView = () => {
 
                     {generatingWithAi && (
                       <div className="column is-full">
-                        <div className="notification is-info">
+                        <div className={`notification ${themeClass}`}>
                           <p style={{ marginBottom: '8px' }}>
                             <i className="fas fa-spinner fa-spin"></i> Generating note content...
                           </p>
@@ -696,7 +844,7 @@ const NotesView = () => {
                                         <div className="field is-grouped">
                                           <div className="control">
                                             <button
-                                              className="button is-success is-medium"
+                                              className={`button ${themeClass} is-medium`}
                                               type="button"
                                               onClick={() => handleUpdateNote(note.notes_id)}
                                               disabled={updatingNote}
@@ -725,7 +873,7 @@ const NotesView = () => {
                                                 fontWeight: '600',
                                                 backgroundColor: '#ffffff',
                                                 border: '2px solid #3273dc',
-                                                color: '#3273dc',
+                                                color: themeHex,
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '8px',
@@ -748,8 +896,8 @@ const NotesView = () => {
                                   </p>
                                   <p style={{ marginBottom: '8px' }}>
                                     <strong>Notes ID:</strong> {note.notes_id ?? '-'} |{' '}
-                                    <strong>Chapter:</strong> {note.chapter_id} |{' '}
-                                    <strong>Lesson:</strong> {note.lesson_id}
+                                    <strong>Chapter:</strong> {note.chapter_name || note.chapter_id} |{' '}
+                                    <strong>Lesson:</strong> {note.lesson_name || note.lesson_id}
                                   </p>
                                   <p style={{ marginBottom: '8px', fontWeight: '600', color: '#2c3e50' }}>Content:</p>
                                   <div
@@ -791,7 +939,7 @@ const NotesView = () => {
                           fontWeight: '600',
                           backgroundColor: '#ffffff',
                           border: '2px solid #3273dc',
-                          color: '#3273dc',
+                          color: themeHex,
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
@@ -819,7 +967,7 @@ const NotesView = () => {
                         required
                         style={inputStyle}
                       />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-file-alt"></i>
                       </span>
                     </div>
@@ -828,19 +976,21 @@ const NotesView = () => {
 
                 <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
                   <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter ID</label>
+                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter</label>
                     <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="chapter_id"
-                        placeholder="e.g., 1"
-                        value={createForm.chapter_id}
-                        onChange={handleCreateFormChange}
-                        required
-                        style={inputStyle}
-                      />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <div className="select is-fullwidth">
+                        <select
+                          name="chapter_id"
+                          value={createForm.chapter_id}
+                          onChange={handleCreateFormChange}
+                          required
+                          style={inputStyle}
+                        >
+                          <option value="">Select Chapter</option>
+                          {chapters.map(c => <option key={c.id || c.uid} value={c.id || c.uid}>{c.chapter_name}</option>)}
+                        </select>
+                      </div>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-layer-group"></i>
                       </span>
                     </div>
@@ -849,19 +999,21 @@ const NotesView = () => {
 
                 <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
                   <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson ID</label>
+                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson</label>
                     <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="lesson_id"
-                        placeholder="e.g., 1"
-                        value={createForm.lesson_id}
-                        onChange={handleCreateFormChange}
-                        required
-                        style={inputStyle}
-                      />
-                      <span className="icon is-left" style={{ color: '#3273dc' }}>
+                      <div className="select is-fullwidth">
+                        <select
+                          name="lesson_id"
+                          value={createForm.lesson_id}
+                          onChange={handleCreateFormChange}
+                          required
+                          style={inputStyle}
+                        >
+                          <option value="">Select Lesson</option>
+                          {lessons.map(l => <option key={l.id || l.uid} value={l.id || l.uid}>{l.lesson_name}</option>)}
+                        </select>
+                      </div>
+                      <span className="icon is-left" style={{ color: themeHex }}>
                         <i className="fas fa-chalkboard"></i>
                       </span>
                     </div>
@@ -896,7 +1048,7 @@ const NotesView = () => {
                   <div className="field is-grouped">
                     <div className="control">
                       <button
-                        className="button is-success is-medium"
+                        className={`button ${themeClass} is-medium`}
                         type="submit"
                         disabled={creatingNote}
                         style={{
@@ -923,7 +1075,7 @@ const NotesView = () => {
                           fontWeight: '600',
                           backgroundColor: '#ffffff',
                           border: '2px solid #3273dc',
-                          color: '#3273dc',
+                          color: themeHex,
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
@@ -944,7 +1096,7 @@ const NotesView = () => {
         </div>
 
         {loading && (
-          <div className="notification is-info">
+          <div className={`notification ${themeClass}`}>
             <p>Loading notes...</p>
           </div>
         )}
@@ -988,7 +1140,7 @@ const NotesView = () => {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                      <span className="icon" style={{ color: '#3273dc', marginRight: '10px' }}>
+                      <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
                         <i className="fas fa-sticky-note"></i>
                       </span>
                       <h2 className="subtitle is-4" style={{ margin: 0, color: '#2c3e50' }}>
@@ -1018,7 +1170,7 @@ const NotesView = () => {
                           fontSize: '15px'
                         }}
                       >
-                        Chapter {note.chapter_id}
+                        {note.chapter_name || `Chapter ${note.chapter_id}`}
                       </span>
                       <span
                         className="tag is-light"
@@ -1030,7 +1182,7 @@ const NotesView = () => {
                           fontSize: '15px'
                         }}
                       >
-                        Lesson {note.lesson_id}
+                        {note.lesson_name || `Lesson ${note.lesson_id}`}
                       </span>
                       <span
                         className={`tag ${note.published ? 'is-success' : 'is-warning'}`}
@@ -1048,47 +1200,51 @@ const NotesView = () => {
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                      type="button"
-                      className="button is-large"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditNote(note)
-                      }}
-                      disabled={editingId !== null}
-                      style={getEditButtonStyle(editingId !== null)}
-                    >
-                      <i className="fas fa-edit"></i>
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="button is-large"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteNote(note.notes_id)
-                      }}
-                      disabled={deletingId === note.notes_id}
-                      style={{
-                        borderRadius: '6px',
-                        fontWeight: '600',
-                        backgroundColor: '#ffffff',
-                        border: '2px solid #f05149',
-                        color: '#f05149',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '0.75rem 1.5rem',
-                        opacity: deletingId === note.notes_id ? 0.6 : 1
-                      }}
-                    >
-                      <i className="fas fa-trash"></i>
-                      <span>{deletingId === note.notes_id ? 'Deleting...' : 'Delete'}</span>
-                    </button>
+                    {activeRole === 'Teacher' && (
+                      <>
+                        <button
+                          type="button"
+                          className="button is-large"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditNote(note)
+                          }}
+                          disabled={editingId !== null}
+                          style={getEditButtonStyle(editingId !== null)}
+                        >
+                          <i className="fas fa-edit"></i>
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="button is-large"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteNote(note.notes_id)
+                          }}
+                          disabled={deletingId === note.notes_id}
+                          style={{
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            backgroundColor: '#ffffff',
+                            border: '2px solid #f05149',
+                            color: '#f05149',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '0.75rem 1.5rem',
+                            opacity: deletingId === note.notes_id ? 0.6 : 1
+                          }}
+                        >
+                          <i className="fas fa-trash"></i>
+                          <span>{deletingId === note.notes_id ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      </>
+                    )}
                     <span
                       className="icon is-large"
                       style={{
-                        color: '#3273dc',
+                        color: themeHex,
                         transition: 'transform 0.3s ease',
                         transform: expandedId === note.notes_id ? 'rotate(180deg)' : 'rotate(0deg)'
                       }}
@@ -1104,7 +1260,7 @@ const NotesView = () => {
                       className="subtitle is-5"
                       style={{ color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}
                     >
-                      <span className="icon" style={{ color: '#3273dc' }}>
+                      <span className="icon" style={{ color: themeHex }}>
                         <i className="fas fa-align-left"></i>
                       </span>
                       Content
@@ -1226,7 +1382,7 @@ const NotesView = () => {
                           <div className="field is-grouped">
                             <div className="control">
                               <button
-                                className="button is-success is-medium"
+                                className={`button ${themeClass} is-medium`}
                                 type="button"
                                 onClick={() => handleUpdateNote(note.notes_id)}
                                 disabled={updatingNote}
@@ -1255,7 +1411,7 @@ const NotesView = () => {
                                   fontWeight: '600',
                                   backgroundColor: '#ffffff',
                                   border: '2px solid #3273dc',
-                                  color: '#3273dc',
+                                  color: themeHex,
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '8px',

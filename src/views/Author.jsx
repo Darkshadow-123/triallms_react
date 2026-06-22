@@ -1,12 +1,12 @@
 import { useEffect, useState, useContext } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from '../api'
-import { AuthContext } from '../context/AuthContext'
 import ChapterItem from '../components/ChapterItem'
+import { RoleContext } from '../context/RoleContext'
 
 const Author = () => {
   const { id } = useParams()
-  const { user } = useContext(AuthContext)
+  const { themeClass } = useContext(RoleContext)
   const [chapters, setChapters] = useState([])
   const [createdBy, setCreatedBy] = useState({})
 
@@ -21,8 +21,8 @@ const Author = () => {
   }, [id])
 
   return (
-    <div className="content-management">
-      <div className="hero is-info is-medium">
+    <div className="author-detail">
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">{createdBy.first_name} {createdBy.last_name}</h1>
         </div>
@@ -31,18 +31,11 @@ const Author = () => {
       <section className="section">
         <div className="container">
           <div className="columns is-multiline">
-            {user.isAuthenticated ? (
-              chapters.map(chapter => (
+              {chapters.map(chapter => (
                 <div key={chapter.id} className="column is-4">
                   <ChapterItem chapter={chapter} />
                 </div>
-              ))
-            ) : (
-              <>
-                <h2>Restricted Access</h2>
-                <p>You need to have access or log in !!</p>
-              </>
-            )}
+              ))}
 
             <div className="column is-12">
               <nav className="pagination">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import {
   BarChart,
   Bar,
@@ -19,8 +19,9 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts'
+import { RoleContext } from '../context/RoleContext'
 
-const COLORS = ['#3273dc', '#48c774', '#ffdd57', '#f14668', '#b86bff', '#7a7d85']
+// Colors will be generated inside the component based on themeHex
 
 const buildPieLabel = (entry) => {
   if (entry.subjectBreakdown) {
@@ -30,6 +31,8 @@ const buildPieLabel = (entry) => {
 }
 
 const ClassPerformanceAnalytics = () => {
+  const { themeClass, themeHex } = useContext(RoleContext)
+  const COLORS = [themeHex, '#48c774', '#ffdd57', '#f14668', '#b86bff', '#7a7d85']
   const [school, setSchool] = useState('')
   const [grade, setGrade] = useState('')
   const [analytics, setAnalytics] = useState(null)
@@ -145,7 +148,7 @@ const ClassPerformanceAnalytics = () => {
 
   return (
     <div className="performance-analytics">
-      <div className="hero is-info is-medium">
+      <div className={`hero ${themeClass} is-medium`}>
         <div className="hero-body has-text-centered">
           <h1 className="title">Class Performance Analytics</h1>
           <p className="subtitle">Aggregated metrics for all students in the grade</p>
@@ -179,7 +182,7 @@ const ClassPerformanceAnalytics = () => {
               </div>
 
               <div className="column is-4 is-flex is-align-items-flex-end">
-                <button type="submit" className="button is-primary is-fullwidth">
+                <button type="submit" className={`button ${themeClass} is-fullwidth`}>
                   Refresh
                 </button>
               </div>
@@ -187,11 +190,11 @@ const ClassPerformanceAnalytics = () => {
           </form>
 
           {loadingOptions && (
-            <div className="notification is-info">Loading dropdown options...</div>
+            <div className={`notification ${themeClass}`}>Loading dropdown options...</div>
           )}
 
           {loading && (
-            <div className="notification is-info">Loading class analytics data...</div>
+            <div className={`notification ${themeClass}`}>Loading class analytics data...</div>
           )}
 
           {error && (
@@ -247,7 +250,7 @@ const ClassPerformanceAnalytics = () => {
                         <YAxis domain={[0, 100]} />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="avgScore" fill="#3273dc" name="Average Score" />
+                        <Bar dataKey="avgScore" fill={themeHex} name="Average Score" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -362,7 +365,7 @@ const ClassPerformanceAnalytics = () => {
                   </div>
                 </div>
               </div>
-              <div className="notification is-info">
+              <div className={`notification ${themeClass}`}>
               {analytics.bestPerformingStudents && Object.keys(analytics.bestPerformingStudents).length > 0 && (
                 <>
                   <div className="box mt-5">
@@ -374,7 +377,7 @@ const ClassPerformanceAnalytics = () => {
                       {availableSubjects.map((subject) => (
                         <div className="control" key={subject}>
                           <button
-                            className={`button ${selectedSubject === subject ? 'is-info' : 'is-light'}`}
+                            className={`button ${selectedSubject === subject ? themeClass : 'is-light'}`}
                             onClick={() => setSelectedSubject(subject)}
                           >
                             {subject}

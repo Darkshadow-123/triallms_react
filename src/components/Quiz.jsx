@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
+import { RoleContext } from '../context/RoleContext'
 
 const Quiz = ({ quiz }) => {
+  const { themeClass } = useContext(RoleContext)
   const quizList = Array.isArray(quiz) ? quiz : []
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState({})
@@ -78,7 +80,7 @@ const Quiz = ({ quiz }) => {
     <div>
       {!quizStarted && (
         <div className="mb-4">
-          <button className="button is-primary" onClick={handleStartQuiz}>
+          <button className={`button ${themeClass}`} onClick={handleStartQuiz}>
             Start Quiz ({totalQuizzes} questions)
           </button>
         </div>
@@ -95,61 +97,39 @@ const Quiz = ({ quiz }) => {
               </div>
               <div className="level-right">
                 <p className="has-text-weight-bold">
-                  Time Left: <span className={timeLeft <= 10 ? 'has-text-danger' : 'has-text-info'}>
+                  Time Left: <span className={timeLeft <= 10 ? 'has-text-danger' : `has-text-${themeClass.split('-')[1]}` }>
                     {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
                   </span>
                 </p>
               </div>
             </div>
-            <progress className="progress is-info" value={timeLeft} max="60"></progress>
+            <progress className={`progress ${themeClass}`} value={timeLeft} max="60"></progress>
           </div>
 
           {currentQuiz && (
             <>
               <div className="control mb-4">
-                <h3>{currentQuiz.question}</h3>
+                <h3 className="has-text-weight-semibold is-size-5 mb-4">{currentQuiz.question}</h3>
               </div>
 
-              <div className="control">
-                <label className="radio">
-                  <input
-                    type="radio"
-                    value={currentQuiz.op1}
-                    checked={selectedAnswers[currentQuiz.id] === currentQuiz.op1}
-                    onChange={(e) => setSelectedAnswers({...selectedAnswers, [currentQuiz.id]: e.target.value})}
-                  />
-                  {' '}{currentQuiz.op1}
-                </label>
-              </div>
-
-              <div className="control">
-                <label className="radio">
-                  <input
-                    type="radio"
-                    value={currentQuiz.op2}
-                    checked={selectedAnswers[currentQuiz.id] === currentQuiz.op2}
-                    onChange={(e) => setSelectedAnswers({...selectedAnswers, [currentQuiz.id]: e.target.value})}
-                  />
-                  {' '}{currentQuiz.op2}
-                </label>
-              </div>
-
-              <div className="control mb-4">
-                <label className="radio">
-                  <input
-                    type="radio"
-                    value={currentQuiz.op3}
-                    checked={selectedAnswers[currentQuiz.id] === currentQuiz.op3}
-                    onChange={(e) => setSelectedAnswers({...selectedAnswers, [currentQuiz.id]: e.target.value})}
-                  />
-                  {' '}{currentQuiz.op3}
-                </label>
-              </div>
+              {currentQuiz.options && currentQuiz.options.map((option, idx) => (
+                <div className="control mb-3" key={idx}>
+                  <label className="radio" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="radio"
+                      value={option}
+                      checked={selectedAnswers[currentQuiz.id] === option}
+                      onChange={(e) => setSelectedAnswers({...selectedAnswers, [currentQuiz.id]: e.target.value})}
+                    />
+                    <span>{option}</span>
+                  </label>
+                </div>
+              ))}
 
               <div className="control mt-4 level">
                 <div className="level-left">
                   <button 
-                    className="button is-info mr-2" 
+                    className={`button ${themeClass} mr-2`} 
                     onClick={handlePreviousQuiz}
                     disabled={currentQuizIndex === 0}
                   >
@@ -166,7 +146,7 @@ const Quiz = ({ quiz }) => {
                     </button>
                   ) : (
                     <button 
-                      className="button is-info" 
+                      className={`button ${themeClass}`} 
                       onClick={handleNextQuiz}
                     >
                       Next
@@ -201,7 +181,7 @@ const Quiz = ({ quiz }) => {
             ))}
           </div>
 
-          <button className="button is-primary mt-4" onClick={handleStartQuiz}>
+          <button className={`button ${themeClass} mt-4`} onClick={handleStartQuiz}>
             Restart Quiz
           </button>
         </div>
