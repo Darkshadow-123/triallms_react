@@ -45,7 +45,7 @@ const ClassPerformanceAnalytics = () => {
   const [selectedSubject, setSelectedSubject] = useState('')
   const [availableSubjects, setAvailableSubjects] = useState([])
 
-  const backendUrl = 'http://127.0.0.1:5002'
+  const backendUrl = '/api'
 
   const fetchAnalytics = async () => {
     setLoading(true)

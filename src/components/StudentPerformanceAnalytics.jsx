@@ -48,7 +48,7 @@ const StudentPerformanceAnalytics = () => {
   const [students, setStudents] = useState([])
   const [loadingOptions, setLoadingOptions] = useState(true)
 
-  const backendUrl = 'http://127.0.0.1:5001'
+  const backendUrl = '/api'
 
   const fetchAnalytics = async () => {
     setLoading(true)
