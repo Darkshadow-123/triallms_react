@@ -3,7 +3,7 @@ import axios from '../api'
 import CreateModeTabs from '../components/CreateModeTabs'
 import { RoleContext } from '../context/RoleContext'
 
-const API_BASE = 'http://localhost:8001'
+const API_BASE = '/fastapi'
 
 const emptyMcq = () => ({
   question: '',

@@ -1,5 +1,5 @@
 import axios from 'axios'
 
-axios.defaults.baseURL = '/api'
+axios.defaults.baseURL = '/fastapi/'
 
 export default axios
