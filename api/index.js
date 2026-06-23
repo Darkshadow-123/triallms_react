@@ -42,7 +42,11 @@ const connectDB = async () => {
     console.log('MongoDB connected successfully')
   } catch (error) {
     console.error('MongoDB connection error:', error.message)
-    throw error;
+    console.log('Please check your MongoDB Atlas connection:')
+    console.log('1. Ensure your IP is whitelisted in Atlas')
+    console.log('2. Verify the connection string is correct')
+    console.log('3. Check if the cluster is running')
+    process.exit(1)
   }
 }
 
@@ -77,7 +81,7 @@ const getSubjectCombination = (subjectNames = []) => {
   const normalizedSubjects = new Set(
     subjectNames.map(s => s.toLowerCase().trim())
   )
-  
+
   const hasMath = normalizedSubjects.has('mathematics') || normalizedSubjects.has('math')
   const hasPhysics = normalizedSubjects.has('physics')
   const hasChemistry = normalizedSubjects.has('chemistry')
@@ -99,7 +103,7 @@ const getSubjectCombination = (subjectNames = []) => {
 // Build dynamic radar data based on subjects and scores
 const buildDynamicRadarData = (subjectScores = {}, combination = 'default') => {
   const clamp = (val) => Math.min(100, Math.max(20, Math.round(val)))
-  
+
   if (combination === 'pcm-english') {
     // PCM + English combination
     const mathScore = subjectScores['Mathematics'] || subjectScores['Math'] || 0
@@ -132,7 +136,7 @@ const buildDynamicRadarData = (subjectScores = {}, combination = 'default') => {
     // Default fallback with generic skills
     const avgScore = Object.values(subjectScores).reduce((a, b) => a + b, 0) / Math.max(1, Object.keys(subjectScores).length)
     const baseline = Math.round(avgScore)
-    
+
     return [
       { subject: 'Logical Reasoning', value: clamp(baseline + 4) },
       { subject: 'Analytical Thinking', value: clamp(baseline - 2) },
@@ -219,12 +223,12 @@ const buildHomeworkStatusBySubject = (homeworkReports = [], subjectMap = new Map
 
   homeworkReports.forEach((report) => {
     const subjectName = subjectMap.get(report.subject) || report.subject || 'Unknown'
-    
+
     if (report.submittedCount > 0) {
       const submitted = statuses[0]
       submitted.subjects[subjectName] = (submitted.subjects[subjectName] || 0) + report.submittedCount
     }
-    
+
     if (report.pendingCount > 0) {
       const pending = statuses[1]
       pending.subjects[subjectName] = (pending.subjects[subjectName] || 0) + report.pendingCount
@@ -289,7 +293,7 @@ router.get('/students', async (req, res) => {
 router.get('/grades/:schoolId', async (req, res) => {
   try {
     const { schoolId } = req.params
-    
+
     // Find all grades for this school
     const grades = await Grade.find({ schools: schoolId }, 'gradeId').sort({ gradeId: 1 })
     res.json(grades.map(g => g.gradeId))
@@ -302,10 +306,10 @@ router.get('/grades/:schoolId', async (req, res) => {
 router.get('/subjects/:schoolId', async (req, res) => {
   try {
     const { schoolId } = req.params
-    
+
     // Find all grades for this school first
     const gradesForSchool = await Grade.find({ schools: schoolId }, 'subjects').lean()
-    
+
     // Extract all subject IDs from those grades
     const subjectIds = new Set()
     gradesForSchool.forEach(grade => {
@@ -313,12 +317,12 @@ router.get('/subjects/:schoolId', async (req, res) => {
         grade.subjects.forEach(subId => subjectIds.add(subId))
       }
     })
-    
+
     // Find all those subjects
-    const subjects = await Subject.find({ 
-      subjectId: { $in: Array.from(subjectIds) } 
+    const subjects = await Subject.find({
+      subjectId: { $in: Array.from(subjectIds) }
     }, 'subjectId subjectName').sort({ subjectName: 1 })
-    
+
     res.json(subjects.map(s => ({ id: s.subjectId, name: s.subjectName })))
   } catch (error) {
     console.error(error)
@@ -329,7 +333,7 @@ router.get('/subjects/:schoolId', async (req, res) => {
 router.get('/students/:schoolId', async (req, res) => {
   try {
     const { schoolId } = req.params
-    
+
     // Find all students for this school
     const students = await Student.find({ schoolId: schoolId }, 'studentId name').sort({ name: 1 })
     res.json(students.map(s => ({ id: s.studentId, name: s.name })))
@@ -342,16 +346,16 @@ router.get('/students/:schoolId', async (req, res) => {
 router.get('/students/:schoolId/:gradeId', async (req, res) => {
   try {
     const { schoolId, gradeId } = req.params
-    
+
     // Find all result reports for this school and grade
     const reports = await ResultReport.find({ grade: gradeId }).distinct('studentId')
-    
+
     // Find all students with those IDs in this school
-    const students = await Student.find({ 
+    const students = await Student.find({
       schoolId: schoolId,
       studentId: { $in: reports }
     }, 'studentId name').sort({ name: 1 })
-    
+
     res.json(students.map(s => ({ id: s.studentId, name: s.name })))
   } catch (error) {
     console.error(error)
@@ -395,18 +399,18 @@ router.get('/SPA/:grade/past_performance/:identifier', async (req, res) => {
 
     // Get all reports (for this implementation, we'll aggregate from entire database)
     const allReports = await ResultReport.find({})
-    
+
     const subjectReports = subject
       ? allReports.filter((report) => report.subjectId === subject.subjectId)
       : []
-    
+
     const studentReports = student
       ? allReports.filter((report) => report.studentId === student.studentId)
       : []
 
     const effectiveReports = mode === 'subject' ? subjectReports : studentReports
     const scores = effectiveReports.map((r) => r.result || 0).filter((s) => s > 0)
-    
+
     // Build analytics data
     const buildDistribution = (scores = []) => {
       const categories = [
@@ -416,18 +420,18 @@ router.get('/SPA/:grade/past_performance/:identifier', async (req, res) => {
         { name: 'D (60-69)', min: 60, max: 69, value: 0, color: '#ffdd57' },
         { name: 'F (<60)', min: 0, max: 59, value: 0, color: '#f14668' }
       ]
-      
+
       scores.forEach((score) => {
         const category = categories.find((c) => score >= c.min && score <= c.max)
         if (category) category.value++
       })
-      
+
       return categories
     }
 
     const average = (arr) => arr.length ? arr.reduce((sum, value) => sum + value, 0) / arr.length : 0
     const avgScore = average(scores)
-    
+
     const analytics = {
       subjectPerformance: subject ? [{ name: subject.subjectName, avgScore }] : [],
       gradeDistribution: buildDistribution(scores),
@@ -512,7 +516,7 @@ router.get('/SPA/:school/:grade/past_performance/:identifier', async (req, res) 
     let studentReports = student
       ? gradeReports.filter((report) => report.studentId === student.studentId)
       : []
-    
+
     // Filter by specific subject if provided in query
     if (subject) {
       studentReports = studentReports.filter((report) => report.subjectId === subject)
@@ -530,7 +534,7 @@ router.get('/SPA/:school/:grade/past_performance/:identifier', async (req, res) 
       // Get all unique subject IDs in this grade
       const subjectIds = [...new Set(gradeReports.map((item) => item.subjectId).filter(Boolean))]
       const allSubjects = await Subject.find({ subjectId: { $in: subjectIds } })
-      
+
       const subjectAverages = allSubjects.map((subjectItem) => {
         const reports = gradeReports.filter((report) => report.subjectId === subjectItem.subjectId)
         return {
@@ -585,21 +589,21 @@ router.get('/SPA/:school/:grade/past_performance/:identifier', async (req, res) 
         const reportsForSubject = studentReports.filter((item) => item.subjectId === subjectItem.subjectId)
         return {
           name: subjectItem.subjectName,
-          avgScore: reportsForSubject.length > 0 
-            ? Math.round(average(reportsForSubject.map((report) => report.result || 0)) * 100) / 100 
+          avgScore: reportsForSubject.length > 0
+            ? Math.round(average(reportsForSubject.map((report) => report.result || 0)) * 100) / 100
             : 0
         }
       })
 
       subjectPerformance.push(...studentSubjectScores)
-      
+
       // Enrich student reports with subject names for grade distribution
       const subjectMap = new Map(subjectsInGrade.map(s => [s.subjectId, s.subjectName]))
       const enrichedStudentReports = studentReports.map(report => ({
         ...report.toObject(),
         subjectName: subjectMap.get(report.subjectId) || 'Unknown'
       }))
-      
+
       gradeDistribution.push(...buildDistributionWithSubjects(enrichedStudentReports))
       monthlyTrend.push(...buildMonthlyTrend(studentReports))
 
@@ -615,7 +619,7 @@ router.get('/SPA/:school/:grade/past_performance/:identifier', async (req, res) 
       schoolVsGrade.push({ name: 'School Average', value: schoolAvg }, { name: 'Grade Average', value: gradeAvg })
 
       const studentAvg = Math.round(average(studentReports.map((report) => report.result || 0)) * 100) / 100
-      
+
       // Build dynamic radar based on student's enrolled subject combination
       const subjectScoresMap = {}
       const enrolledSubjects = student?.subjects || []
@@ -734,7 +738,7 @@ router.get('/CPA/:school/:grade/class_analytics', async (req, res) => {
 
     const bestPerformingStudents = {};
     const leastPerformingStudents = {};
-    
+
     subjectsInGrade.forEach(subj => {
       const reps = validReports.filter(r => r.subjectId === subj.subjectId);
       const studentAvgs = new Map();
@@ -744,7 +748,7 @@ router.get('/CPA/:school/:grade/class_analytics', async (req, res) => {
         ex.total += r.result || 0;
         studentAvgs.set(r.studentId, ex);
       });
-      
+
       const sortedStudents = Array.from(studentAvgs.entries()).map(([sId, data]) => ({
         studentName: studentMap.get(sId) || sId,
         score: Math.round((data.total / data.count) * 100) / 100
@@ -761,7 +765,7 @@ router.get('/CPA/:school/:grade/class_analytics', async (req, res) => {
       { name: '60-69', min: 60, max: 69, count: 0 },
       { name: '<60', min: 0, max: 59, count: 0 }
     ];
-    
+
     const allStudentAvgs = new Map();
     validReports.forEach(r => {
       const ex = allStudentAvgs.get(r.studentId) || { count: 0, total: 0 };
@@ -769,7 +773,7 @@ router.get('/CPA/:school/:grade/class_analytics', async (req, res) => {
       ex.total += r.result || 0;
       allStudentAvgs.set(r.studentId, ex);
     });
-    
+
     allStudentAvgs.forEach((data, sId) => {
       const avg = data.total / data.count;
       const cat = distCategories.find(c => avg >= c.min && avg <= c.max);
@@ -797,8 +801,8 @@ router.get('/CPA/:school/:grade/class_analytics', async (req, res) => {
   }
 });
 
+app.use('/', router)
 app.use('/api', router)
 
 
 export default app
-
