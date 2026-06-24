@@ -4,7 +4,7 @@ import axios from '../api'
 import Quiz from '../components/Quiz'
 import { RoleContext } from '../context/RoleContext'
 
-const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Contents', mainTitle = 'Introduction' }) => {
+const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Contents', mainTitle = 'Introduction', showNotes = true }) => {
   const { themeClass, themeHex, themeGradient, themeLightHex } = useContext(RoleContext)
   const { slug } = useParams()
   const [chapter, setChapter] = useState({ created_by: { id: 0 } })
@@ -39,7 +39,11 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
     }
 
     trackStarted(lesson)
-    getNotes(lesson)
+    if (showNotes) {
+      getNotes(lesson)
+    } else {
+      setNotes([])
+    }
   }
 
   const getNotes = (lesson) => {

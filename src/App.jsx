@@ -31,8 +31,8 @@ function App() {
             <Route path="/performance-&-analytics" element={<CPAView />} />
             <Route path="/class-performance-analytics" element={<ClassPerformanceAnalytics />} />
 
-            <Route path="/content-Management/:slug" element={<LessonViewer filterType="article" sidebarTitle="Table of Contents" mainTitle="Introduction" />} />
-            <Route path="/assessment-Management/:slug" element={<LessonViewer filterType="quiz" sidebarTitle="Quizzes" mainTitle="Assessment Overview" />} />
+            <Route path="/content-Management/:slug" element={<LessonViewer filterType="article" sidebarTitle="Table of Contents" mainTitle="Introduction" showNotes={true} />} />
+            <Route path="/assessment-Management/:slug" element={<LessonViewer filterType="quiz" sidebarTitle="Quizzes" mainTitle="Assessment Overview" showNotes={false} />} />
             <Route path="/authors/:id" element={<Author />} />
             <Route path="/dashboard/my-account" element={<MyAccount />} />
             <Route path="/dashboard/create-chapter" element={<CreateChapter />} />
