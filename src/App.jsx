@@ -23,7 +23,6 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeView />} />
             <Route path="/content-Management" element={<CMView />} />
-            <Route path="/content-Generation" element={<CGView />} />
             <Route path="/assessment-Management" element={<AMView />} />
             <Route path="/assessment-Generation" element={<AGView />} />
             <Route path="/homework-Management" element={<HWView />} />
