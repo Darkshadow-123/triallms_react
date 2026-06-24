@@ -1,6 +1,7 @@
 /node_modules
 /backend
 /VerityLMS-main
+/dist 
 .env
 /fastapi
 extract.cjs

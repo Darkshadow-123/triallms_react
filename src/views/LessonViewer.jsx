@@ -13,6 +13,7 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
   const [activeLesson, setActiveLesson] = useState(null)
   const [quiz, setQuiz] = useState({})
   const [activity, setActivity] = useState({})
+  const [notes, setNotes] = useState([])
 
   useEffect(() => {
     console.log('mounted')
@@ -38,6 +39,24 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
     }
 
     trackStarted(lesson)
+    getNotes(lesson)
+  }
+
+  const getNotes = (lesson) => {
+    const lessonId = lesson.id || lesson.uid;
+    const digits = String(lessonId).replace(/\D/g, '');
+    const numericId = parseInt(digits.substring(0, 12), 10) || 1;
+    
+    axios.get(`note?lesson_id=${numericId}`)
+      .then(response => {
+        setNotes(Array.isArray(response.data) ? response.data : [response.data].filter(Boolean));
+      })
+      .catch(error => {
+        setNotes([])
+        if (error.response && error.response.status !== 404) {
+          console.error('Error fetching notes:', error)
+        }
+      })
   }
 
   const trackStarted = (lesson) => {
@@ -251,6 +270,36 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
                       {activeLesson.long_description}
                     </div>
                   </div>
+
+                  {/* Notes Section */}
+                  {notes.length > 0 && (
+                    <div 
+                      className="box" 
+                      style={{ 
+                        marginBottom: '30px',
+                        background: themeGradient,
+                        borderLeft: `5px solid ${themeHex}`,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                        <span className="icon" style={{ color: themeHex, marginRight: '10px' }}>
+                          <i className="fas fa-sticky-note"></i>
+                        </span>
+                        <h3 className="subtitle is-5" style={{ margin: 0, color: '#2c3e50', fontWeight: '600' }}>
+                          Notes
+                        </h3>
+                      </div>
+                      <div className="content">
+                        {notes.map(note => (
+                          <div key={note.notes_id} style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
+                            <h4 style={{ color: themeHex, marginBottom: '10px', fontWeight: '600', fontSize: '18px', marginTop: 0 }}>{note.title}</h4>
+                            <div style={{ whiteSpace: 'pre-wrap', color: '#4a4a4a', fontSize: '15px' }}>{note.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quiz Section */}
                   {activeLesson.lesson_type === 'quiz' && (
