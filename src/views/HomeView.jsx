@@ -92,8 +92,12 @@ const HomeView = () => {
               </div>
             )}
 
-            <hr />
+          </div>
 
+          <hr />
+
+          <h2 className="title is-4 mt-5">Latest Chapters</h2>
+          <div className="columns is-multiline">
             {chapters.map(chapter => (
               <div key={chapter.id || chapter.uid} className="column is-4">
                 <ChapterItem chapter={chapter} />
