@@ -1270,6 +1270,8 @@ const HWView = () => {
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '10px',
                     paddingBottom: '15px',
                     borderBottom: expandedId === homework.homework_id ? '2px solid #3273dc' : 'none'
                   }}
@@ -1314,7 +1316,7 @@ const HWView = () => {
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     {activeRole === 'Teacher' && (
                       <>
                         <button

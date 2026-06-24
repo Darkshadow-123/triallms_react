@@ -69,7 +69,7 @@ const AMView = () => {
             <div className="columns">
               {/* Sidebar */}
               <div className="column is-3">
-                <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="desktop-sticky" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div
                     style={{
                       background: themeGradient,

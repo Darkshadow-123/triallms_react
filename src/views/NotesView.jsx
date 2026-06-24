@@ -1134,6 +1134,8 @@ const NotesView = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '10px',
                     paddingBottom: '15px',
                     borderBottom: expandedId === note.notes_id ? '2px solid #3273dc' : 'none'
                   }}
@@ -1199,7 +1201,7 @@ const NotesView = () => {
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     {activeRole === 'Teacher' && (
                       <>
                         <button

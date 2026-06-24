@@ -1360,6 +1360,8 @@ const AGView = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '10px',
                     paddingBottom: '15px',
                     borderBottom: expandedId === assessment.assessment_id ? '2px solid #3273dc' : 'none'
                   }}
@@ -1399,7 +1401,7 @@ const AGView = () => {
                         <i className={`fas fa-${assessment.published ? 'check-circle' : 'clock'}`}></i>
                         {assessment.published ? 'Published' : 'Draft'}
                       </span>
-                      <div className="tags" style={{ display: 'flex', gap: '10px' }}>
+                      <div className="tags" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <span className={`tag ${themeClass} is-light`} style={{ fontWeight: '600', padding: '12px 18px', fontSize: '15px' }}>
                           <i className="fas fa-graduation-cap" style={{ marginRight: '8px' }}></i> {assessment.mcq_pool?.length || 0} MCQs
                         </span>
@@ -1409,7 +1411,7 @@ const AGView = () => {
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     {activeRole === 'Teacher' && (
                       <>
                         <button

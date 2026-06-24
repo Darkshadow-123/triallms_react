@@ -121,13 +121,11 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
             {/* Sidebar - Table of Contents */}
             <div className="column is-3">
               <div 
-                className="box" 
+                className="box desktop-sticky" 
                 style={{ 
                   background: themeGradient,
                   borderLeft: `5px solid ${themeHex}`,
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  position: 'sticky',
-                  top: '20px'
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
