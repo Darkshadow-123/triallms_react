@@ -2,9 +2,10 @@ import { useEffect, useState, useContext } from 'react'
 import axios from '../api'
 import ChapterItem from '../components/ChapterItem'
 import { RoleContext } from '../context/RoleContext'
+import { Link } from 'react-router-dom'
 
 const HomeView = () => {
-  const { themeClass } = useContext(RoleContext)
+  const { themeClass, activeRole } = useContext(RoleContext)
   const [chapters, setChapters] = useState([])
 
   useEffect(() => {
@@ -29,41 +30,67 @@ const HomeView = () => {
         <div className="container">
           <div className="columns is-multiline">
             <div className="column is-4">
-              <div className="box has-text-centered">
-                <h2 className="is-size-4 mt-4 mb-4">Content Management</h2>
-                <p>placeholder for content Management</p>
+              <Link to="/content-Management">
+                <div className="box has-text-centered is-clickable" style={{ height: '100%' }}>
+                  <h2 className="is-size-4 mt-4 mb-4">{activeRole === 'Teacher' ? 'Manage Content' : 'View Content'}</h2>
+                  <p>Access and organize learning materials</p>
+                </div>
+              </Link>
+            </div>
+            {activeRole === 'Teacher' && (
+              <div className="column is-4">
+                <Link to="/dashboard/create-chapter">
+                  <div className="box has-text-centered is-clickable" style={{ height: '100%' }}>
+                    <h2 className="is-size-4 mt-4 mb-4">Create Content</h2>
+                    <p>Build and publish new lessons and chapters</p>
+                  </div>
+                </Link>
               </div>
+            )}
+            <div className="column is-4">
+              <Link to="/assessment-Management">
+                <div className="box has-text-centered is-clickable" style={{ height: '100%' }}>
+                  <h2 className="is-size-4 mt-4 mb-4">{activeRole === 'Teacher' ? 'Manage Assessments' : 'Take Assessments'}</h2>
+                  <p>View and manage quizzes and tests</p>
+                </div>
+              </Link>
+            </div>
+            {activeRole === 'Teacher' && (
+              <div className="column is-4">
+                <Link to="/assessment-Generation">
+                  <div className="box has-text-centered is-clickable" style={{ height: '100%' }}>
+                    <h2 className="is-size-4 mt-4 mb-4">Generate Assessments</h2>
+                    <p>Use AI to quickly generate quizzes</p>
+                  </div>
+                </Link>
+              </div>
+            )}
+            <div className="column is-4">
+              <Link to="/homework-Management">
+                <div className="box has-text-centered is-clickable" style={{ height: '100%' }}>
+                  <h2 className="is-size-4 mt-4 mb-4">{activeRole === 'Teacher' ? 'Manage Homework' : 'View Homework'}</h2>
+                  <p>Assign and review homework tasks</p>
+                </div>
+              </Link>
             </div>
             <div className="column is-4">
-              <div className="box has-text-centered">
-                <h2 className="is-size-4 mt-4 mb-4">Content Generation</h2>
-                <p>placeholder for content generation</p>
-              </div>
+              <Link to={activeRole === 'Teacher' ? '/class-performance-analytics' : '/performance-&-analytics'}>
+                <div className="box has-text-centered is-clickable" style={{ height: '100%' }}>
+                  <h2 className="is-size-4 mt-4 mb-4">{activeRole === 'Teacher' ? 'Class Analytics' : 'My Performance'}</h2>
+                  <p>Track progress and performance metrics</p>
+                </div>
+              </Link>
             </div>
-            <div className="column is-4">
-              <div className="box has-text-centered">
-                <h2 className="is-size-4 mt-4 mb-4">Assessment Management</h2>
-                <p>placeholder for Assessment Management</p>
+            {activeRole === 'Student' && (
+              <div className="column is-4">
+                <Link to="/notes-Management">
+                  <div className="box has-text-centered is-clickable" style={{ height: '100%' }}>
+                    <h2 className="is-size-4 mt-4 mb-4">My Notes</h2>
+                    <p>View and manage your personal notes</p>
+                  </div>
+                </Link>
               </div>
-            </div>
-            <div className="column is-4">
-              <div className="box has-text-centered">
-                <h2 className="is-size-4 mt-4 mb-4">Assessment Generation</h2>
-                <p>placeholder for Assessment Generation</p>
-              </div>
-            </div>
-            <div className="column is-4">
-              <div className="box has-text-centered">
-                <h2 className="is-size-4 mt-4 mb-4">Homework Management</h2>
-                <p>placeholder for Homework Management</p>
-              </div>
-            </div>
-            <div className="column is-4">
-              <div className="box has-text-centered">
-                <h2 className="is-size-4 mt-4 mb-4">Class Performance & Analytics</h2>
-                <p>placeholder for Class Performance & Analytics</p>
-              </div>
-            </div>
+            )}
 
             <hr />
 
