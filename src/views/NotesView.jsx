@@ -51,9 +51,8 @@ const NotesView = () => {
   }
 
   const [filters, setFilters] = useState({
-    notes_id: '',
     title: '',
-    chapter_id: ''
+    chapter_name: ''
   })
 
   const [createForm, setCreateForm] = useState({
@@ -123,9 +122,8 @@ const NotesView = () => {
       if (useFilters) {
         const params = new URLSearchParams()
 
-        if (filters.notes_id) params.append('notes_id', filters.notes_id)
         if (filters.title) params.append('title', filters.title)
-        if (filters.chapter_id) params.append('chapter_id', filters.chapter_id)
+        if (filters.chapter_name) params.append('chapter_name', filters.chapter_name)
 
         if (params.toString()) {
           url = `${API_BASE}/note?${params.toString()}`
@@ -271,7 +269,7 @@ const NotesView = () => {
   }
 
   const handleReset = () => {
-    setFilters({ notes_id: '', title: '', chapter_id: '' })
+    setFilters({ title: '', chapter_name: '' })
     fetchNotes(false)
   }
 
@@ -481,31 +479,6 @@ const NotesView = () => {
                   <div className="field">
                     <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
                       <span className="icon is-small" style={{ marginRight: '5px' }}>
-                        <i className="fas fa-hashtag"></i>
-                      </span>
-                      Notes ID
-                    </label>
-                    <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="notes_id"
-                        placeholder="e.g., 1"
-                        value={filters.notes_id}
-                        onChange={handleFilterChange}
-                        style={inputStyle}
-                      />
-                      <span className="icon is-left" style={{ color: themeHex }}>
-                        <i className="fas fa-sticky-note"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
-                  <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
-                      <span className="icon is-small" style={{ marginRight: '5px' }}>
                         <i className="fas fa-heading"></i>
                       </span>
                       Title
@@ -533,15 +506,15 @@ const NotesView = () => {
                       <span className="icon is-small" style={{ marginRight: '5px' }}>
                         <i className="fas fa-bookmark"></i>
                       </span>
-                      Chapter ID
+                      Chapter Name
                     </label>
                     <div className="control has-icons-left">
                       <input
                         className="input"
-                        type="number"
-                        name="chapter_id"
-                        placeholder="e.g., 1"
-                        value={filters.chapter_id}
+                        type="text"
+                        name="chapter_name"
+                        placeholder="e.g., Motion"
+                        value={filters.chapter_name}
                         onChange={handleFilterChange}
                         style={inputStyle}
                       />

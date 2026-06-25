@@ -64,10 +64,8 @@ const HWView = () => {
   
   // Filter states
   const [filters, setFilters] = useState({
-    homework_id: '',
     title: '',
-    chapter_id: '',
-    lesson_id: '',
+    chapter_name: '',
     published: ''
   })
 
@@ -133,10 +131,8 @@ const HWView = () => {
       if (useFilters) {
         const params = new URLSearchParams()
         
-        if (filters.homework_id) params.append('homework_id', filters.homework_id)
         if (filters.title) params.append('title', filters.title)
-        if (filters.chapter_id) params.append('chapter_id', filters.chapter_id)
-        if (filters.lesson_id) params.append('lesson_id', filters.lesson_id)
+        if (filters.chapter_name) params.append('chapter_name', filters.chapter_name)
         if (filters.published !== '') params.append('published', filters.published === 'true')
         
         if (params.toString()) {
@@ -299,10 +295,8 @@ const HWView = () => {
 
   const handleReset = () => {
     setFilters({
-      homework_id: '',
       title: '',
-      chapter_id: '',
-      lesson_id: '',
+      chapter_name: '',
       published: ''
     })
     fetchHomeworks(false)
@@ -530,31 +524,6 @@ const HWView = () => {
                   <div className="field">
                     <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
                       <span className="icon is-small" style={{ marginRight: '5px' }}>
-                        <i className="fas fa-hashtag"></i>
-                      </span>
-                      Homework ID
-                    </label>
-                    <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="homework_id"
-                        placeholder="e.g., 1"
-                        value={filters.homework_id}
-                        onChange={handleFilterChange}
-                        style={{ borderColor: themeHex, borderWidth: '1px' }}
-                      />
-                      <span className="icon is-left" style={{ color: themeHex }}>
-                        <i className="fas fa-book"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
-                  <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
-                      <span className="icon is-small" style={{ marginRight: '5px' }}>
                         <i className="fas fa-heading"></i>
                       </span>
                       Title
@@ -582,15 +551,15 @@ const HWView = () => {
                       <span className="icon is-small" style={{ marginRight: '5px' }}>
                         <i className="fas fa-bookmark"></i>
                       </span>
-                      Chapter ID
+                      Chapter Name
                     </label>
                     <div className="control has-icons-left">
                       <input
                         className="input"
-                        type="number"
-                        name="chapter_id"
-                        placeholder="e.g., 1"
-                        value={filters.chapter_id}
+                        type="text"
+                        name="chapter_name"
+                        placeholder="e.g., Motion"
+                        value={filters.chapter_name}
                         onChange={handleFilterChange}
                         style={{ borderColor: themeHex, borderWidth: '1px' }}
                       />
@@ -601,58 +570,35 @@ const HWView = () => {
                   </div>
                 </div>
 
-                <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
-                  <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
-                      <span className="icon is-small" style={{ marginRight: '5px' }}>
-                        <i className="fas fa-graduation-cap"></i>
-                      </span>
-                      Lesson ID
-                    </label>
-                    <div className="control has-icons-left">
-                      <input
-                        className="input"
-                        type="number"
-                        name="lesson_id"
-                        placeholder="e.g., 1"
-                        value={filters.lesson_id}
-                        onChange={handleFilterChange}
-                        style={{ borderColor: themeHex, borderWidth: '1px' }}
-                      />
-                      <span className="icon is-left" style={{ color: themeHex }}>
-                        <i className="fas fa-chalkboard"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
-                  <div className="field">
-                    <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
-                      <span className="icon is-small" style={{ marginRight: '5px' }}>
-                        <i className="fas fa-check-circle"></i>
-                      </span>
-                      Published Status
-                    </label>
-                    <div className="control has-icons-left">
-                      <div className="select is-fullwidth">
-                        <select
-                          name="published"
-                          value={filters.published}
-                          onChange={handleFilterChange}
-                          style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
-                        >
-                          <option value="">All Status</option>
-                          <option value="true">Published</option>
-                          <option value="false">Draft</option>
-                        </select>
+                {activeRole === 'Teacher' && (
+                  <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
+                    <div className="field">
+                      <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>
+                        <span className="icon is-small" style={{ marginRight: '5px' }}>
+                          <i className="fas fa-check-circle"></i>
+                        </span>
+                        Published Status
+                      </label>
+                      <div className="control has-icons-left">
+                        <div className="select is-fullwidth">
+                          <select
+                            name="published"
+                            value={filters.published}
+                            onChange={handleFilterChange}
+                            style={{ borderColor: themeHex, borderWidth: '1px', color: '#2c3e50' }}
+                          >
+                            <option value="">All Status</option>
+                            <option value="true">Published</option>
+                            <option value="false">Draft</option>
+                          </select>
+                        </div>
+                        <span className="icon is-left" style={{ color: themeHex }}>
+                          <i className="fas fa-bars"></i>
+                        </span>
                       </div>
-                      <span className="icon is-left" style={{ color: themeHex }}>
-                        <i className="fas fa-bars"></i>
-                      </span>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="column is-full">
                   <div className="field is-grouped">
