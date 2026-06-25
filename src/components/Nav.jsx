@@ -40,16 +40,17 @@ const Nav = () => {
           <Link to="/" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
           
           <div className="navbar-item has-dropdown is-hoverable">
-            <a className="navbar-link">Content</a>
+            <a className="navbar-link">Chapters and Notes</a>
             <div className="navbar-dropdown">
-              <Link to="/content-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>View Content</Link>
-              <Link to="/homework-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Homework</Link>
+              <Link to="/content-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>View Chapters</Link>
               <Link to="/notes-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Notes</Link>
               {activeRole === 'Teacher' && (
-                <Link to="/dashboard/create-chapter" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Create Content</Link>
+                <Link to="/dashboard/create-chapter" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Create Chapters</Link>
               )}
             </div>
           </div>
+
+          <Link to="/homework-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Homework</Link>
 
           <div className="navbar-item has-dropdown is-hoverable">
             <a className="navbar-link">Assessments</a>
