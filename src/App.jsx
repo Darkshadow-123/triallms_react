@@ -13,6 +13,7 @@ import LessonViewer from './views/LessonViewer'
 import Author from './views/Author'
 import MyAccount from './views/dashboard/MyAccount'
 import CreateChapter from './views/dashboard/CreateChapter'
+import Footer from './components/Footer'
 
 function App() {
   return (
@@ -35,9 +36,7 @@ function App() {
             <Route path="/dashboard/my-account" element={<MyAccount />} />
             <Route path="/dashboard/create-chapter" element={<CreateChapter />} />
           </Routes>
-          <footer className="footer">
-            <p className="has-text-centered">Footer</p>
-          </footer>
+          <Footer />
         </Router>
     </RoleProvider>
   )
