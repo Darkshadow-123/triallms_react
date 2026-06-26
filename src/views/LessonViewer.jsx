@@ -53,7 +53,10 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
     
     axios.get(`note?lesson_id=${numericId}`)
       .then(response => {
-        setNotes(Array.isArray(response.data) ? response.data : [response.data].filter(Boolean));
+        const fetchedNotes = Array.isArray(response.data) ? response.data : [response.data].filter(Boolean);
+        // Filter notes locally to ensure only the notes for this lesson are displayed
+        const filteredNotes = fetchedNotes.filter(note => String(note.lesson_id) === String(numericId));
+        setNotes(filteredNotes);
       })
       .catch(error => {
         setNotes([])
