@@ -17,7 +17,7 @@ const Footer = () => {
           <div className="column is-8 has-text-centered">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
               <span style={{ fontWeight: 'bold', lineHeight: '1', fontSize: '2rem', color: '#363636' }}>Verity LMS</span>
-              <span style={{ fontSize: '0.85rem', letterSpacing: '3px', color: '#888', fontWeight: '700', textTransform: 'uppercase' }}>Trial</span>
+              <span style={{ fontSize: '0.85rem', letterSpacing: '3px', color: '#888', fontWeight: '700', textTransform: 'uppercase', marginTop: '0.2rem' }}>Trial</span>
             </div>
             <div className="box" style={{ background: 'transparent', boxShadow: 'none', border: '1px dashed rgba(0,0,0,0.2)' }}>
               <p className="is-size-6 mb-2" style={{ fontWeight: '600' }}>About this Trial App</p>
