@@ -1,8 +1,10 @@
 import { useEffect, useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from '../../api'
 import { RoleContext } from '../../context/RoleContext'
 
 const CreateChapter = () => {
+  const navigate = useNavigate()
   const { themeClass, themeHex, themeGradient, themeLightHex, activeRole } = useContext(RoleContext)
   const [form, setForm] = useState({
     chapter_name: '',
@@ -77,7 +79,15 @@ const CreateChapter = () => {
   if (activeRole === 'Student') {
     return (
       <div className="content-management">
-        <div className={`hero is-danger is-medium`}>
+        <div className={`hero is-danger is-medium`} style={{ position: 'relative' }}>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="button is-ghost" 
+            style={{ position: 'absolute', top: '20px', left: '20px', color: 'white', fontWeight: 'bold' }}
+          >
+            <span className="icon"><i className="fas fa-arrow-left"></i></span>
+            <span>Go Back</span>
+          </button>
           <div className="hero-body has-text-centered">
             <h1 className="title">
               <i className="fas fa-lock" style={{ marginRight: '10px' }}></i>
@@ -95,7 +105,15 @@ const CreateChapter = () => {
   return (
     <div className="content-management">
       {/* Hero Section */}
-      <div className={`hero ${themeClass} is-medium`}>
+      <div className={`hero ${themeClass} is-medium`} style={{ position: 'relative' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="button is-ghost" 
+          style={{ position: 'absolute', top: '20px', left: '20px', color: 'white', fontWeight: 'bold' }}
+        >
+          <span className="icon"><i className="fas fa-arrow-left"></i></span>
+          <span>Go Back</span>
+        </button>
         <div className="hero-body has-text-centered">
           <h1 className="title">Create Chapter</h1>
         </div>

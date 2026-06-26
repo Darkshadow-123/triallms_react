@@ -1,9 +1,11 @@
 import { useState, useEffect, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from '../../api'
 import ChapterItem from '../../components/ChapterItem'
 import { RoleContext } from '../../context/RoleContext'
 
 const MyAccount = () => {
+  const navigate = useNavigate()
   const [chapters, setChapters] = useState([])
   const { themeClass, activeRole, themeHex } = useContext(RoleContext)
 
@@ -109,7 +111,15 @@ const MyAccount = () => {
   return (
     <div className="my-account">
       {/* Hero Section */}
-      <div className={`hero ${themeClass} is-medium`}>
+      <div className={`hero ${themeClass} is-medium`} style={{ position: 'relative' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="button is-ghost" 
+          style={{ position: 'absolute', top: '20px', left: '20px', color: 'white', fontWeight: 'bold' }}
+        >
+          <span className="icon"><i className="fas fa-arrow-left"></i></span>
+          <span>Go Back</span>
+        </button>
         <div className="hero-body has-text-centered">
           <h1 className="title">My Account</h1>
         </div>

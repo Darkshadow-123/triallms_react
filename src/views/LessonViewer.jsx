@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import axios from '../api'
 import Quiz from '../components/Quiz'
 import { RoleContext } from '../context/RoleContext'
@@ -7,6 +7,7 @@ import { RoleContext } from '../context/RoleContext'
 const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Contents', mainTitle = 'Introduction', showNotes = true }) => {
   const { themeClass, themeHex, themeGradient, themeLightHex } = useContext(RoleContext)
   const { slug } = useParams()
+  const navigate = useNavigate()
   const [chapter, setChapter] = useState({ created_by: { id: 0 } })
   const [lessons, setLessons] = useState([])
 
@@ -105,7 +106,15 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
 
   return (
     <div className="lesson-viewer">
-      <div className={`hero ${themeClass} is-medium`}>
+      <div className={`hero ${themeClass} is-medium`} style={{ position: 'relative' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="button is-ghost" 
+          style={{ position: 'absolute', top: '20px', left: '20px', color: 'white', fontWeight: 'bold' }}
+        >
+          <span className="icon"><i className="fas fa-arrow-left"></i></span>
+          <span>Go Back</span>
+        </button>
         <div className="hero-body has-text-centered">
           <h1 className="title">{chapter.chapter_name}</h1>
           <Link
