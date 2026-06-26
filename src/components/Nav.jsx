@@ -22,7 +22,7 @@ const Nav = () => {
       <div className="navbar-brand">
         <Link className="navbar-item is-size-4" to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', height: 'auto', padding: '0.5rem 1rem' }}>
           <span style={{ fontWeight: 'bold', lineHeight: '1' }}>Verity LMS</span>
-          <span style={{ fontSize: '0.45em', letterSpacing: '2px', textTransform: 'uppercase', color: '#888', marginTop: '2px', fontWeight: '600' }}>Trial</span>
+          <span style={{ fontSize: '0.45em', letterSpacing: '2px', color: '#888', fontWeight: '600', justifyContent: 'center'}}>Trial</span>
         </Link>
         
         <a 
