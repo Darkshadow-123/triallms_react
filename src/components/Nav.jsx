@@ -20,9 +20,9 @@ const Nav = () => {
   return (
     <nav className="navbar premium-navbar is-fixed-top" role="navigation" aria-label="main navigation" style={{ minHeight: '5rem' }}>
       <div className="navbar-brand">
-        <Link className="navbar-item is-size-4" to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', height: 'auto', padding: '0.5rem 1rem' }}>
+        <Link className="navbar-item is-size-4" to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 'auto', padding: '0.5rem 1rem' }}>
           <span style={{ fontWeight: 'bold', lineHeight: '1' }}>Verity LMS</span>
-          <span style={{ fontSize: '0.45em', letterSpacing: '2px', color: '#888', fontWeight: '600', justifyContent: 'center'}}>Trial</span>
+          <span style={{ fontSize: '0.45em', letterSpacing: '2px', color: '#888', fontWeight: '600' }}>Trial</span>
         </Link>
         
         <a 
