@@ -177,6 +177,12 @@ const NotesView = () => {
 
   const handleCreateNote = async (e) => {
     e.preventDefault()
+    
+    if (!activeGrade || !activeSubject || !createForm.chapter_id || !createForm.lesson_id || !createForm.title.trim() || !createForm.content.trim()) {
+      setError('Please fill in all required fields (Grade, Subject, Chapter, Lesson, Title, and Content).')
+      return
+    }
+    
     setCreatingNote(true)
     setError(null)
 
