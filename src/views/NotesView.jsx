@@ -216,8 +216,8 @@ const NotesView = () => {
   }
 
   const handleGenerateWithAi = async () => {
-    if (!aiGoal.trim()) {
-      setError('Please enter a goal for AI generation')
+    if (!activeGrade || !activeSubject || !createForm.chapter_id || !createForm.lesson_id || !aiGoal.trim()) {
+      setError('Please select a Grade, Subject, Chapter, Lesson, and enter a Goal for AI generation.')
       return
     }
 
