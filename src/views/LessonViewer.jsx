@@ -344,7 +344,7 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
                   )}
 
                   {/* Homework and Assessment Cards */}
-                  {filterType === 'article' && (() => {
+                  {filterType === 'article' && activeRole === 'Student' && (() => {
                     // Simulated logic for Trial App - making it true for the specific example provided by the user
                     const titleLower = activeLesson.title.toLowerCase();
                     const hasHomework = titleLower.includes('distance') || titleLower.includes('speed') || titleLower.includes('motion');
