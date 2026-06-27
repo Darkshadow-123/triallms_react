@@ -248,7 +248,15 @@ const NotesView = () => {
       }
 
       const data = await response.json()
-      const generatedNotes = Array.isArray(data) ? data : [data]
+      
+      const targetLesson = lessons.find(l => String(l.id || l.uid) === String(createForm.lesson_id))
+      const lessonName = targetLesson ? (targetLesson.title || targetLesson.lesson_name) : 'Generated notes'
+
+      const generatedNotes = (Array.isArray(data) ? data : [data]).map(note => ({
+        ...note,
+        title: (!note.title || note.title === 'Generated notes') ? lessonName : note.title
+      }))
+      
       setGeneratedPreview(generatedNotes)
       const firstEditableNote = generatedNotes.find(note => note.notes_id)
       if (firstEditableNote) {
@@ -526,7 +534,7 @@ const NotesView = () => {
                 </div>
 
                 <div className="column is-full">
-                  <div className="field is-grouped">
+                  <div className="field is-grouped is-grouped-multiline">
                     <div className="control">
                       <button
                         className={`button ${themeClass} is-medium`}
@@ -745,39 +753,7 @@ const NotesView = () => {
                                         </div>
                                       </div>
 
-                                      <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
-                                        <div className="field">
-                                          <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Chapter ID</label>
-                                          <div className="control">
-                                            <input
-                                              className="input"
-                                              type="number"
-                                              name="chapter_id"
-                                              value={editForm.chapter_id}
-                                              onChange={handleEditFormChange}
-                                              required
-                                              style={inputStyle}
-                                            />
-                                          </div>
-                                        </div>
-                                      </div>
 
-                                      <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
-                                        <div className="field">
-                                          <label className="label" style={{ color: '#2c3e50', fontWeight: '600' }}>Lesson ID</label>
-                                          <div className="control">
-                                            <input
-                                              className="input"
-                                              type="number"
-                                              name="lesson_id"
-                                              value={editForm.lesson_id}
-                                              onChange={handleEditFormChange}
-                                              required
-                                              style={inputStyle}
-                                            />
-                                          </div>
-                                        </div>
-                                      </div>
 
                                       <div className="column is-full-mobile is-half-tablet is-one-third-desktop">
                                         <div className="field">
@@ -814,7 +790,7 @@ const NotesView = () => {
                                       </div>
 
                                       <div className="column is-full">
-                                        <div className="field is-grouped">
+                                        <div className="field is-grouped is-grouped-multiline">
                                           <div className="control">
                                             <button
                                               className={`button ${themeClass} is-medium`}
@@ -1018,7 +994,7 @@ const NotesView = () => {
                 </div>
 
                 <div className="column is-full">
-                  <div className="field is-grouped">
+                  <div className="field is-grouped is-grouped-multiline">
                     <div className="control">
                       <button
                         className={`button ${themeClass} is-medium`}
@@ -1354,7 +1330,7 @@ const NotesView = () => {
                         </div>
 
                         <div className="column is-full">
-                          <div className="field is-grouped">
+                          <div className="field is-grouped is-grouped-multiline">
                             <div className="control">
                               <button
                                 className={`button ${themeClass} is-medium`}

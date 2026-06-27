@@ -601,7 +601,7 @@ const HWView = () => {
                 )}
 
                 <div className="column is-full">
-                  <div className="field is-grouped">
+                  <div className="field is-grouped is-grouped-multiline">
                     <div className="control">
                       <button 
                         className={`button ${themeClass} is-medium`} 
@@ -876,7 +876,7 @@ const HWView = () => {
                                   </div>
 
                                   <div className="column is-full">
-                                    <div className="field is-grouped">
+                                    <div className="field is-grouped is-grouped-multiline">
                                       <div className="control">
                                         <button
                                           className="button is-success is-medium"
@@ -1114,7 +1114,7 @@ const HWView = () => {
                 </div>
 
                 <div className="column is-full">
-                  <div className="field is-grouped">
+                  <div className="field is-grouped is-grouped-multiline">
                     <div className="control">
                       <button 
                         className={`button ${themeClass} is-medium`} 
@@ -1474,7 +1474,7 @@ const HWView = () => {
                         </div>
 
                         <div className="column is-full">
-                          <div className="field is-grouped">
+                          <div className="field is-grouped is-grouped-multiline">
                             <div className="control">
                               <button 
                                 className="button is-success is-medium" 

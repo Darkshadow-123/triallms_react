@@ -16,6 +16,7 @@ const CreateChapter = () => {
   })
   const [grades, setGrades] = useState([])
   const [subjects, setSubjects] = useState([])
+  const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => {
     getGrades()
@@ -49,6 +50,19 @@ const CreateChapter = () => {
     }
   }
 
+  const handleReset = () => {
+    setForm({
+      chapter_name: '',
+      short_description: '',
+      grades: [],
+      subject: '',
+      status: '',
+      lessons: []
+    })
+    setSubjects([])
+    setSuccessMsg('')
+  }
+
   const handleSubmit = (status) => {
     console.log('submitForm')
     console.log(form)
@@ -59,6 +73,9 @@ const CreateChapter = () => {
       .post('content_management/create_chapter/', formData)
       .then(response => {
         console.log(response.data)
+        setSuccessMsg('Chapter has been created successfully!')
+        setTimeout(() => setSuccessMsg(''), 5000)
+        handleReset()
       })
       .catch(error => {
         console.log('error:', error)
@@ -403,12 +420,20 @@ const CreateChapter = () => {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="field is-grouped" style={{ marginTop: '30px' }}>
+          {/* Action Buttons and Success Message */}
+          {successMsg && (
+            <div className="notification is-success is-light" style={{ marginTop: '20px' }}>
+              <button className="delete" onClick={() => setSuccessMsg('')}></button>
+              <i className="fas fa-check-circle" style={{ marginRight: '8px' }}></i>
+              {successMsg}
+            </div>
+          )}
+          
+          <div className="field is-grouped is-grouped-multiline" style={{ marginTop: '30px' }}>
             <div className="control">
               <button 
                 className={`button ${themeClass} is-medium`}
-                onClick={() => handleSubmit('draft')}
+                onClick={() => handleSubmit('published')}
                 style={{
                   borderRadius: '6px',
                   fontWeight: '600',
@@ -420,33 +445,31 @@ const CreateChapter = () => {
                   gap: '8px',
                   padding: '0.75rem 1.5rem'
                 }}
-                onMouseEnter={(e) => e.target.style.boxShadow = '0 4px 12px rgba(72, 199, 116, 0.4)'}
-                onMouseLeave={(e) => e.target.style.boxShadow = 'none'}
               >
-                <i className="fas fa-save"></i>
-                <span>Save as Draft</span>
+                <i className="fas fa-plus-circle"></i>
+                <span>Create Chapter</span>
               </button>
             </div>
             <div className="control">
               <button 
-                className={`button ${themeClass} is-medium`}
-                onClick={() => handleSubmit('review')}
+                className="button is-medium"
+                onClick={handleReset}
                 style={{
                   borderRadius: '6px',
                   fontWeight: '600',
+                  backgroundColor: '#ffffff',
+                  border: `2px solid ${themeHex}`,
+                  color: themeHex,
                   transition: 'all 0.3s ease',
-                  border: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
                   padding: '0.75rem 1.5rem'
                 }}
-                onMouseEnter={(e) => e.target.style.boxShadow = '0 4px 12px rgba(50, 115, 220, 0.4)'}
-                onMouseLeave={(e) => e.target.style.boxShadow = 'none'}
               >
-                <i className="fas fa-paper-plane"></i>
-                <span>Submit for Review</span>
+                <i className="fas fa-redo"></i>
+                <span>Reset</span>
               </button>
             </div>
           </div>

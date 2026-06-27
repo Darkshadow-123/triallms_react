@@ -58,10 +58,12 @@ const Nav = () => {
           <div className="navbar-item has-dropdown is-hoverable">
             <a className="navbar-link">Assessments</a>
             <div className="navbar-dropdown">
-              {activeRole !== 'Teacher' && (
+              {activeRole === 'Teacher' && (
                 <Link to="/assessment-Generation" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Generation</Link>
               )}
-              <Link to="/assessment-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Management</Link>
+              {activeRole === 'Student' && (
+                <Link to="/assessment-Management" className="navbar-item" onClick={() => setIsMobileMenuOpen(false)}>Management</Link>
+              )}
             </div>
           </div>
 
