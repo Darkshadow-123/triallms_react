@@ -4,7 +4,7 @@ import AssessmentChapterItem from '../components/AssessmentChapterItem'
 import { RoleContext } from '../context/RoleContext'
 
 const AMView = () => {
-  const { themeClass, themeHex, themeLightHex, themeGradient } = useContext(RoleContext)
+  const { themeClass, themeHex, themeLightHex, themeGradient, activeRole } = useContext(RoleContext)
   const [chapters, setChapters] = useState([])
   const [grades, setGrades] = useState([])
   const [activeGrade, setActiveGrade] = useState(null)
@@ -53,6 +53,25 @@ const AMView = () => {
   const handleSubjectClick = (subject) => {
     setActiveSubject(subject)
   }
+
+  if (activeRole !== 'Student') {
+    return (
+      <div className="assessment-management">
+        <div className={`hero ${themeClass} is-medium`}>
+          <div className="hero-body has-text-centered">
+            <h1 className="title">
+              <i className="fas fa-lock" style={{ marginRight: '12px' }}></i>
+              Access Restricted
+            </h1>
+            <p className="subtitle mt-3" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+              The Assessment Management component can only be viewed by Students.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="assessment-management">
       <div className={`hero ${themeClass} is-medium`}>

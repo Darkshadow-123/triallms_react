@@ -5,7 +5,7 @@ import Quiz from '../components/Quiz'
 import { RoleContext } from '../context/RoleContext'
 
 const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Contents', mainTitle = 'Introduction', showNotes = true }) => {
-  const { themeClass, themeHex, themeGradient, themeLightHex } = useContext(RoleContext)
+  const { themeClass, themeHex, themeGradient, themeLightHex, activeRole } = useContext(RoleContext)
   const { slug } = useParams()
   const navigate = useNavigate()
   const [chapter, setChapter] = useState({ created_by: { id: 0 } })
@@ -102,6 +102,32 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
       .catch(error => {
         console.error('Error marking as done:', error)
       })
+  }
+
+  if (filterType === 'quiz' && activeRole !== 'Student') {
+    return (
+      <div className="lesson-viewer">
+        <div className={`hero ${themeClass} is-medium`} style={{ position: 'relative' }}>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="button is-ghost" 
+            style={{ position: 'absolute', top: '20px', left: '20px', color: 'white', fontWeight: 'bold' }}
+          >
+            <span className="icon"><i className="fas fa-arrow-left"></i></span>
+            <span>Go Back</span>
+          </button>
+          <div className="hero-body has-text-centered">
+            <h1 className="title">
+              <i className="fas fa-lock" style={{ marginRight: '12px' }}></i>
+              Access Restricted
+            </h1>
+            <p className="subtitle mt-3" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+              The Assessment view can only be accessed by Students.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -316,7 +342,7 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
                   )}
 
                   {/* Homework and Assessment Cards */}
-                  {(() => {
+                  {filterType === 'article' && (() => {
                     // Simulated logic for Trial App - making it true for the specific example provided by the user
                     const titleLower = activeLesson.title.toLowerCase();
                     const hasHomework = titleLower.includes('distance') || titleLower.includes('speed') || titleLower.includes('motion');
@@ -364,7 +390,7 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
                                 <p className="mb-4" style={{ flexGrow: 1, color: '#666', fontSize: '14px', lineHeight: '1.5' }}>
                                   An assessment is available for this lesson to test your knowledge.
                                 </p>
-                                <Link to="/assessment-Management" className="button is-primary is-outlined is-fullwidth" style={{ fontWeight: '600' }}>
+                                <Link to={`/assessment-Management/${slug}`} className="button is-primary is-outlined is-fullwidth" style={{ fontWeight: '600' }}>
                                   Go to Assessment
                                 </Link>
                               </>
