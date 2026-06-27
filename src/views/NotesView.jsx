@@ -254,7 +254,7 @@ const NotesView = () => {
 
       const generatedNotes = (Array.isArray(data) ? data : [data]).map(note => ({
         ...note,
-        title: (!note.title || note.title === 'Generated notes') ? lessonName : note.title
+        title: (!note.title || note.title.toLowerCase() === 'generated notes') ? lessonName : note.title
       }))
       
       setGeneratedPreview(generatedNotes)
