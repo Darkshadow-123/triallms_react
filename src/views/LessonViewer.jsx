@@ -315,6 +315,71 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
                     </div>
                   )}
 
+                  {/* Homework and Assessment Cards */}
+                  {(() => {
+                    // Simulated logic for Trial App - making it true for the specific example provided by the user
+                    const titleLower = activeLesson.title.toLowerCase();
+                    const hasHomework = titleLower.includes('distance') || titleLower.includes('speed') || titleLower.includes('motion');
+                    const hasAssessment = titleLower.includes('distance') || titleLower.includes('speed') || titleLower.includes('motion');
+
+                    return (
+                      <div className="columns is-multiline" style={{ marginBottom: '30px' }}>
+                        <div className="column is-6">
+                          <div className="box" style={{ height: '100%', display: 'flex', flexDirection: 'column', borderTop: `4px solid #3273dc`, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                              <span className="icon is-medium mr-2" style={{ color: '#3273dc', backgroundColor: '#eef3fc', borderRadius: '50%' }}>
+                                <i className="fas fa-book"></i>
+                              </span>
+                              <h4 className="title is-5 mb-0" style={{ color: '#2c3e50' }}>Homework</h4>
+                            </div>
+                            
+                            {hasHomework ? (
+                              <>
+                                <p className="mb-4" style={{ flexGrow: 1, color: '#666', fontSize: '14px', lineHeight: '1.5' }}>
+                                  You have pending homework for this lesson. Complete it to reinforce your understanding.
+                                </p>
+                                <Link to="/homework-Management" className="button is-link is-outlined is-fullwidth" style={{ fontWeight: '600' }}>
+                                  View Homework
+                                </Link>
+                              </>
+                            ) : (
+                              <p className="mb-0" style={{ flexGrow: 1, color: '#888', fontSize: '14px', fontStyle: 'italic', lineHeight: '1.5' }}>
+                                There is no specific homework assigned for this lesson. Please review your notes and the main article to ensure you understand the core concepts.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="column is-6">
+                          <div className="box" style={{ height: '100%', display: 'flex', flexDirection: 'column', borderTop: `4px solid #00d1b2`, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                              <span className="icon is-medium mr-2" style={{ color: '#00d1b2', backgroundColor: '#ebfaf8', borderRadius: '50%' }}>
+                                <i className="fas fa-clipboard-check"></i>
+                              </span>
+                              <h4 className="title is-5 mb-0" style={{ color: '#2c3e50' }}>Assessment</h4>
+                            </div>
+                            
+                            {hasAssessment ? (
+                              <>
+                                <p className="mb-4" style={{ flexGrow: 1, color: '#666', fontSize: '14px', lineHeight: '1.5' }}>
+                                  An assessment is available for this lesson to test your knowledge.
+                                </p>
+                                <Link to="/assessment-Management" className="button is-primary is-outlined is-fullwidth" style={{ fontWeight: '600' }}>
+                                  Go to Assessment
+                                </Link>
+                              </>
+                            ) : (
+                              <p className="mb-0" style={{ flexGrow: 1, color: '#888', fontSize: '14px', fontStyle: 'italic', lineHeight: '1.5' }}>
+                                There is no active assessment available for this lesson. Make sure to complete any quizzes provided within the module itself.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+
                   {/* Quiz Section */}
                   {activeLesson.lesson_type === 'quiz' && (
                     <div 
