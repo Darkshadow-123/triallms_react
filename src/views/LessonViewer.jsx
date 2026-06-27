@@ -10,6 +10,7 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
   const navigate = useNavigate()
   const [chapter, setChapter] = useState({ created_by: { id: 0 } })
   const [lessons, setLessons] = useState([])
+  const [allLessons, setAllLessons] = useState([])
 
   const [activeLesson, setActiveLesson] = useState(null)
   const [quiz, setQuiz] = useState({})
@@ -26,6 +27,7 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
       .then(response => {
         console.log('chapter:', response.data)
         setChapter(response.data.chapter)
+        setAllLessons(response.data.lessons || [])
         // Filter lessons by type
         const filteredLessons = response.data.lessons.filter(lesson => lesson.lesson_type === filterType)
         setLessons(filteredLessons)
@@ -345,10 +347,8 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
 
                   {/* Homework and Assessment Cards */}
                   {filterType === 'article' && activeRole === 'Student' && (() => {
-                    // Simulated logic for Trial App - making it true for the specific example provided by the user
-                    const titleLower = activeLesson.title.toLowerCase();
-                    const hasHomework = titleLower.includes('distance') || titleLower.includes('speed') || titleLower.includes('motion');
-                    const hasAssessment = titleLower.includes('distance') || titleLower.includes('speed') || titleLower.includes('motion');
+                    const hasHomework = allLessons.some(l => l.slug === activeLesson.slug && l.lesson_type === 'homework');
+                    const hasAssessment = allLessons.some(l => l.slug === activeLesson.slug && l.lesson_type === 'quiz');
 
                     return (
                       <div className="columns is-multiline" style={{ marginBottom: '30px' }}>
