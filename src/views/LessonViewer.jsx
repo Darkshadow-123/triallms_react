@@ -18,6 +18,8 @@ const LessonViewer = ({ filterType = 'article', sidebarTitle = 'Table of Content
 
   useEffect(() => {
     console.log('mounted')
+    setActiveLesson(null)
+    setNotes([])
 
     axios
       .get(`content_management/${slug}/`)
